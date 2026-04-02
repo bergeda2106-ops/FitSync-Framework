@@ -26,6 +26,7 @@ export const en = {
   navDashboard: 'Home',
   navWorkout: 'Workout',
   navGymReal: 'GymReal',
+  navAICoach: 'AI Buddy',
   navGym: 'Gym',
   navProfile: 'Profile',
 

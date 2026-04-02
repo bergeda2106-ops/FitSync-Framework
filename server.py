@@ -22,7 +22,7 @@ def proxy_gemini():
     if not data or 'contents' not in data:
         return jsonify({"error": {"message": "Invalid request payload"}}), 400
 
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key={GEMINI_API_KEY}"
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={GEMINI_API_KEY}"
     
     try:
         response = requests.post(url, json=data, headers={'Content-Type': 'application/json'})

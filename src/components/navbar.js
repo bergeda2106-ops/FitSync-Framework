@@ -5,6 +5,7 @@ export function renderNavbar(activePage) {
     { id: 'dashboard', icon: '🏠', labelKey: 'navDashboard' },
     { id: 'workout', icon: '💪', labelKey: 'navWorkout' },
     { id: 'gymreal', icon: '📸', labelKey: 'navGymReal' },
+    { id: 'aicoach', icon: '🤖', labelKey: 'navAICoach' },
     { id: 'gym', icon: '🏢', labelKey: 'navGym' },
     { id: 'profile', icon: '👤', labelKey: 'navProfile' },
   ];

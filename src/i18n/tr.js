@@ -26,6 +26,7 @@ export const tr = {
   navDashboard: 'Ana Sayfa',
   navWorkout: 'Antrenman',
   navGymReal: 'GymReal',
+  navAICoach: 'AI Dostum',
   navGym: 'Salon',
   navProfile: 'Profil',
 
