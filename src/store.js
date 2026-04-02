@@ -1,4 +1,15 @@
+import { db, doc, setDoc, getDoc } from './firebase.js';
+
 const STORAGE_KEY = 'fitsync_data';
+
+function getDeviceId() {
+  let id = localStorage.getItem('fitsync_device_id');
+  if (!id) {
+    id = 'device_' + Date.now() + '_' + Math.random().toString(36).substring(2, 9);
+    localStorage.setItem('fitsync_device_id', id);
+  }
+  return id;
+}
 
 const defaultData = {
   user: null,
@@ -123,6 +134,26 @@ class Store {
   constructor() {
     this.data = this.load();
     this.listeners = [];
+    this.deviceId = getDeviceId();
+    this.syncFromFirebase();
+  }
+
+  async syncFromFirebase() {
+    if (!db) return;
+    try {
+      const docRef = doc(db, 'users', this.deviceId);
+      const docSnap = await getDoc(docRef);
+      if (docSnap.exists()) {
+        const cloudData = docSnap.data();
+        if (cloudData.updatedAt && (!this.data.updatedAt || cloudData.updatedAt > this.data.updatedAt)) {
+          this.data = { ...defaultData, ...cloudData };
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(this.data));
+          this.notify();
+        }
+      }
+    } catch (e) {
+      console.error("Firebase sync error:", e);
+    }
   }
 
   load() {
@@ -140,8 +171,13 @@ class Store {
 
   save() {
     try {
+      this.data.updatedAt = Date.now();
       localStorage.setItem(STORAGE_KEY, JSON.stringify(this.data));
       this.notify();
+
+      if (db) {
+        setDoc(doc(db, 'users', this.deviceId), this.data).catch(e => console.error("Firebase write error:", e));
+      }
     } catch (e) {
       console.error('Store save error:', e);
     }

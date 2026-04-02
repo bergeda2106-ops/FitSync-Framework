@@ -7,6 +7,7 @@ import { renderWorkout, initWorkout } from './pages/workout.js';
 import { renderGymReal, initGymReal } from './pages/gymreal.js';
 import { renderGym, initGym } from './pages/gym.js';
 import { renderProfile, initProfile } from './pages/profile.js';
+import { renderAICoach, initAICoach } from './pages/aicoach.js';
 import { showToast } from './components/toast.js';
 
 class App {
@@ -68,6 +69,9 @@ class App {
       case 'profile':
         pageContent = renderProfile();
         break;
+      case 'aicoach':
+        pageContent = renderAICoach();
+        break;
       default:
         pageContent = renderDashboard();
     }
@@ -99,6 +103,9 @@ class App {
         break;
       case 'profile':
         initProfile((page) => this.navigateTo(page));
+        break;
+      case 'aicoach':
+        initAICoach((page) => this.navigateTo(page));
         break;
     }
 
