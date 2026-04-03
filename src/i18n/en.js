@@ -288,4 +288,58 @@ export const en = {
   weeklySummaryGood: 'Keep going, you\'re doing great! 💪',
   weeklySummaryStart: 'Start this week even stronger! 🚀',
   weeklySummaryDismiss: 'Dismiss',
+
+  // Warm-up
+  warmupTitle: '🔥 Smart Warm-Up Plan',
+  warmupFor: 'warm-up for',
+  warmupSet: 'Warm-up Set',
+  warmupReps: 'reps',
+  warmupNoNeed: 'No warm-up needed for this weight.',
+  warmupEstimate: 'Estimated time',
+  warmupMin: 'min',
+  warmupStart: 'Start Warm-Up',
+  warmupSkip: 'Skip',
+  warmupBtnLabel: '🔥 Warm-Up Plan',
+
+  // RPE (Rate of Perceived Exertion)
+  rpeTitle: 'How did you feel today?',
+  rpeSubtitle: 'Rate of perceived exertion (1-10)',
+  rpeEasy: 'Very Easy',
+  rpeHard: 'Very Hard',
+  rpeSave: 'Save & Finish',
+  rpeSkip: 'Skip',
+  rpeSaved: 'RPE saved 📊',
+
+  // Discipline Score (Rest Timer)
+  disciplineScore: 'Rest Discipline Score',
+  disciplineScoreDesc: 'How closely you followed your rest targets',
+  disciplinePerfect: 'Perfect discipline! 🎯',
+  disciplineGood: 'Good discipline! 💪',
+  disciplineFair: 'Average discipline',
+  disciplinePoor: 'Be more disciplined! ⏱️',
+
+  // Streak Shield
+  streakShield: 'Streak Shield',
+  streakShieldDesc: 'Protects your streak from breaking once',
+  streakShieldCount: 'Shield',
+  streakShieldUsed: '🛡️ Shield used! Your streak is protected.',
+  streakShieldEarned: '🛡️ You earned a Streak Shield!',
+  streakShieldNone: 'No shields',
+
+  // Weekly XP Goal ("Boss Fight" replaced)
+  weeklyXpGoal: '⚡ Weekly XP Goal',
+  weeklyXpGoalDesc: 'Hit your XP target this week!',
+  weeklyXpProgress: 'XP earned this week',
+  weeklyXpTarget: 'Weekly target',
+  weeklyXpComplete: '🎉 Weekly goal complete!',
+  weeklyXpReward: 'Bonus Reward',
+
+  // Volume Analytics
+  volumeAnalytics: '📊 Volume Analytics',
+  volumeAnalyticsDesc: 'Weekly tonnage by muscle group',
+  volumeWeekly: 'Weekly Volume',
+  volumeTotal: 'Total Tonnage',
+  volumeByMuscle: 'By Muscle Group',
+  volumeNoData: 'No workout data this week',
+  volumeTon: 'ton',
 };

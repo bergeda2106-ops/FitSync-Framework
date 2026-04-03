@@ -288,4 +288,58 @@ export const tr = {
   weeklySummaryGood: 'İyi gidiyorsun, devam et! 💪',
   weeklySummaryStart: 'Bu hafta daha güçlü başla! 🚀',
   weeklySummaryDismiss: 'Kapat',
+
+  // Warm-up
+  warmupTitle: '🔥 Akıllı Isınma Planı',
+  warmupFor: 'için ısınma',
+  warmupSet: 'Isınma Seti',
+  warmupReps: 'tekrar',
+  warmupNoNeed: 'Bu ağırlık için ısınma gerekmiyor.',
+  warmupEstimate: 'Tahmini süre',
+  warmupMin: 'dk',
+  warmupStart: 'Isınmaya Başla',
+  warmupSkip: 'Atla',
+  warmupBtnLabel: '🔥 Isınma Planı',
+
+  // RPE (Rate of Perceived Exertion)
+  rpeTitle: 'Bugün nasıl hissettin?',
+  rpeSubtitle: 'Antrenmanın zorluk seviyesi (1-10)',
+  rpeEasy: 'Çok Kolay',
+  rpeHard: 'Çok Zor',
+  rpeSave: 'Kaydet ve Bitir',
+  rpeSkip: 'Atla',
+  rpeSaved: 'RPE kaydedildi 📊',
+
+  // Discipline Score (Rest Timer)
+  disciplineScore: 'Mola Disiplin Skoru',
+  disciplineScoreDesc: 'Set araları hedef molaya ne kadar uyuldu',
+  disciplinePerfect: 'Mükemmel disiplin! 🎯',
+  disciplineGood: 'İyi disiplin! 💪',
+  disciplineFair: 'Ortalama disiplin',
+  disciplinePoor: 'Daha disiplinli ol! ⏱️',
+
+  // Streak Shield
+  streakShield: 'Seri Kalkanı',
+  streakShieldDesc: 'Serinizi bir kez kaybetmekten korur',
+  streakShieldCount: 'Kalkan',
+  streakShieldUsed: '🛡️ Kalkan kullanıldı! Seriniz korundu.',
+  streakShieldEarned: '🛡️ Seri Kalkanı kazandın!',
+  streakShieldNone: 'Kalkan yok',
+
+  // Weekly XP Goal ("Boss Fight" replaced)
+  weeklyXpGoal: '⚡ Haftalık XP Hedefi',
+  weeklyXpGoalDesc: 'Bu hafta XP hedefini yakala!',
+  weeklyXpProgress: 'Bu hafta kazanılan XP',
+  weeklyXpTarget: 'Haftalık hedef',
+  weeklyXpComplete: '🎉 Haftalık hedef tamamlandı!',
+  weeklyXpReward: 'Bonus Ödül',
+
+  // Volume Analytics
+  volumeAnalytics: '📊 Hacim Analitiği',
+  volumeAnalyticsDesc: 'Kas grubu bazlı haftalık tonaj',
+  volumeWeekly: 'Haftalık Hacim',
+  volumeTotal: 'Toplam Tonaj',
+  volumeByMuscle: 'Kas Grubuna Göre',
+  volumeNoData: 'Bu hafta antrenman verisi yok',
+  volumeTon: 'ton',
 };

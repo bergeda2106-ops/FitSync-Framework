@@ -29,6 +29,8 @@ const defaultData = {
   aiChatHistory: [],
   restTimerPrefs: { default: 90 },
   weeklySummaryDismissed: null,
+  streakShields: 0,        // 🛡️ Streak Shield sayısı
+  weeklyXpLog: [],         // ⚡ Haftalık XP log [{weekId, xp}]
 };
 
 // Simulated friends data
@@ -181,10 +183,23 @@ class Store {
       this.notify();
 
       if (db) {
-        setDoc(doc(db, 'users', this.deviceId), this.data).catch(e => console.error("Firebase write error:", e));
+        this._syncToFirebaseWithRetry(this.data, 3);
       }
     } catch (e) {
       console.error('Store save error:', e);
+    }
+  }
+
+  async _syncToFirebaseWithRetry(data, retriesLeft, delay = 1000) {
+    try {
+      await setDoc(doc(db, 'users', this.deviceId), data);
+    } catch (e) {
+      if (retriesLeft > 0) {
+        console.warn(`Firebase write failed, retrying in ${delay}ms... (${retriesLeft} left)`);
+        setTimeout(() => this._syncToFirebaseWithRetry(data, retriesLeft - 1, delay * 2), delay);
+      } else {
+        console.error('Firebase write error after retries:', e);
+      }
     }
   }
 
@@ -298,7 +313,14 @@ class Store {
     if (streak.lastWorkoutDate === yesterday || !streak.lastWorkoutDate) {
       streak.current += 1;
     } else {
-      streak.current = 1;
+      // Missed a day — check for streak shield
+      if ((this.data.streakShields || 0) > 0 && streak.current > 0) {
+        this.data.streakShields -= 1;
+        streak.current += 1; // protected!
+        this._shieldUsed = true;
+      } else {
+        streak.current = 1;
+      }
     }
 
     if (streak.current > streak.best) {
@@ -307,6 +329,12 @@ class Store {
 
     streak.lastWorkoutDate = today;
     this.set('streak', streak);
+
+    // Auto-award shield at 7-day streak milestones
+    if (streak.current > 0 && streak.current % 7 === 0) {
+      this.addStreakShield();
+      this._shieldEarned = true;
+    }
   }
 
   // XP
@@ -323,7 +351,33 @@ class Store {
     }
     xp.level = level;
     this.set('xp', xp);
+
+    // Track weekly XP
+    this._trackWeeklyXP(amount);
+
     return { total: xp.total, level, xpForNext: level * 100, xpInLevel: xp.total - levelXP };
+  }
+
+  _trackWeeklyXP(amount) {
+    const weekId = this.getWeekId();
+    const log = this.data.weeklyXpLog || [];
+    const idx = log.findIndex(e => e.weekId === weekId);
+    if (idx >= 0) {
+      log[idx].xp += amount;
+    } else {
+      log.push({ weekId, xp: amount });
+    }
+    // Keep only last 8 weeks
+    if (log.length > 8) log.splice(0, log.length - 8);
+    this.data.weeklyXpLog = log;
+    // Note: save() called by caller via set()
+  }
+
+  getWeeklyXP() {
+    const weekId = this.getWeekId();
+    const log = this.data.weeklyXpLog || [];
+    const entry = log.find(e => e.weekId === weekId);
+    return entry ? entry.xp : 0;
   }
 
   getXPInfo() {
@@ -539,6 +593,13 @@ class Store {
       const postDate = new Date(p.timestamp);
       return postDate >= startOfWeek && p.onTime;
     }).length;
+  }
+
+  // Streak Shield methods
+  getStreakShields() { return this.data.streakShields || 0; }
+  addStreakShield() {
+    this.data.streakShields = (this.data.streakShields || 0) + 1;
+    this.save();
   }
 
   // Reset

@@ -6,10 +6,13 @@ import { showToast } from '../components/toast.js';
 import { launchConfetti } from '../components/confetti.js';
 import { calculateWorkoutXP, getStreakMultiplier } from '../utils/xp.js';
 import { checkAndAwardBadges } from '../utils/gamification.js';
+import { calculateWarmupSets, estimateWarmupTime } from '../utils/warmup.js';
 
 let restTimerInterval = null;
 let workoutTimerInterval = null;
 let timerStartTime = null; // Track the current workout's startTime
+let restStartTime = null;  // ⏱️ Track when rest started (for discipline score)
+let disciplineScores = []; // 📊 Collect rest discipline scores per set
 
 // Preset workout templates
 const presetTemplates = [
@@ -157,7 +160,12 @@ function renderActiveWorkout(workout, lang) {
               <div class="exercise-header">
                 <span class="exercise-icon">${exerciseData?.icon || '💪'}</span>
                 <h3>${exName}</h3>
-                <button class="exercise-remove-btn" data-remove-exercise="${exIndex}" title="🗑️">🗑️</button>
+                <div class="exercise-header-actions">
+                  <button class="warmup-btn" data-warmup-ex="${exIndex}" title="${t('warmupBtnLabel')}">
+                    🔥
+                  </button>
+                  <button class="exercise-remove-btn" data-remove-exercise="${exIndex}" title="🗑️">🗑️</button>
+                </div>
               </div>
               <div class="sets-list">
                 <div class="set-header-row">
@@ -362,32 +370,53 @@ export function initWorkout(navigateTo) {
       const weight = parseFloat(row.querySelector('.weight-input').value) || 0;
       const reps = parseInt(row.querySelector('.reps-input').value) || 0;
 
-      if (reps > 0) {
-        store.addSetToExercise(exIndex, { weight, reps });
-
-        // Check for PR
-        const workout = store.getActiveWorkout();
-        const exerciseId = workout.exercises[exIndex].exerciseId;
-        const prResult = store.checkPR(exerciseId, weight);
-
-        if (prResult.isNewPR && weight > 0) {
-          launchConfetti();
-          showToast(`${t('workoutPR')} ${weight}kg`, 'pr', 4000);
-        }
-
-        // Add XP per set
-        store.addXP(5);
-
-        // Start rest timer with user preference
-        const restPrefs = store.getRestTimerPrefs();
-        startRestTimer(restPrefs.default);
-
-        // XP toast
-        showToast('+5 XP', 'xp', 1500);
-
-        // Use rerender instead of navigateTo to avoid full page flash
-        window.dispatchEvent(new CustomEvent('rerender'));
+      // ❌ XP istismar koruması: en az 1 tekrar VE pozitif ağırlık
+      if (reps < 1) {
+        showToast(i18n.getLang() === 'tr' ? '⚠️ En az 1 tekrar girmelisin!' : '⚠️ Enter at least 1 rep!', 'warning', 2000);
+        return;
       }
+      if (weight <= 0) {
+        showToast(i18n.getLang() === 'tr' ? '⚠️ Ağırlık sıfırdan büyük olmalı!' : '⚠️ Weight must be greater than 0!', 'warning', 2000);
+        return;
+      }
+
+      // ⏱️ Disiplin skoru hesapla (başlangıçta restStartTime null ise atla)
+      if (restStartTime !== null) {
+        const restPrefs = store.getRestTimerPrefs();
+        const actualRest = (Date.now() - restStartTime) / 1000;
+        const targetRest = restPrefs.default;
+        const score = Math.min(actualRest / targetRest, 2.0); // cap at 200%
+        // Score of 1.0 = perfect, <0.5 = rushed, >1.5 = too long
+        const normalizedScore = score <= 1 ? score : Math.max(0, 2 - score); // penalize going too long too
+        disciplineScores.push(Math.round(normalizedScore * 100));
+      }
+
+      store.addSetToExercise(exIndex, { weight, reps });
+
+      // Check for PR
+      const workout = store.getActiveWorkout();
+      const exerciseId = workout.exercises[exIndex].exerciseId;
+      const prResult = store.checkPR(exerciseId, weight);
+
+      if (prResult.isNewPR && weight > 0) {
+        launchConfetti();
+        showToast(`${t('workoutPR')} ${weight}kg`, 'pr', 4000);
+      }
+
+      // Add XP per set (only with valid weight)
+      const xpGain = weight >= 60 ? 8 : weight >= 30 ? 6 : 5;
+      store.addXP(xpGain);
+
+      // Start rest timer — track rest start
+      const restPrefs = store.getRestTimerPrefs();
+      restStartTime = Date.now();
+      startRestTimer(restPrefs.default);
+
+      // XP toast
+      showToast(`+${xpGain} XP`, 'xp', 1500);
+
+      // Use rerender instead of navigateTo to avoid full page flash
+      window.dispatchEvent(new CustomEvent('rerender'));
     });
   });
 
@@ -417,9 +446,11 @@ export function initWorkout(navigateTo) {
       // Prevent finishing empty workout
       const currentWorkout = store.getActiveWorkout();
       if (currentWorkout) {
-        const totalSets = (currentWorkout.exercises || []).reduce((sum, ex) => sum + (ex.sets?.length || 0), 0);
-        if (totalSets === 0) {
-          showToast(i18n.getLang() === 'tr' ? '⚠️ En az 1 set ekle!' : '⚠️ Add at least 1 set!', 'warning');
+        const totalValidSets = (currentWorkout.exercises || []).reduce((sum, ex) =>
+          sum + (ex.sets || []).filter(s => s.weight > 0 && s.reps >= 1).length, 0
+        );
+        if (totalValidSets === 0) {
+          showToast(i18n.getLang() === 'tr' ? '⚠️ En az 1 geçerli set ekle!' : '⚠️ Add at least 1 valid set!', 'warning');
           return;
         }
       }
@@ -428,41 +459,10 @@ export function initWorkout(navigateTo) {
       finishBtn.disabled = true;
       finishBtn.textContent = '⏳';
 
-      const workout = store.finishWorkout();
-      if (workout) {
-        // Calculate XP with streak multiplier
-        const streak = store.get('streak');
-        const multiplier = getStreakMultiplier(streak.current);
-        const baseXP = calculateWorkoutXP(workout);
-        const xp = Math.round(baseXP * multiplier);
-        store.addXP(xp);
-        const newBadges = checkAndAwardBadges();
-
-        // Clear timers
-        clearRestTimer();
-        if (workoutTimerInterval) {
-          clearInterval(workoutTimerInterval);
-          workoutTimerInterval = null;
-        }
-        timerStartTime = null;
-
-        // Navigate IMMEDIATELY to dashboard
-        navigateTo('dashboard');
-
-        // Show celebration toasts after navigation
-        launchConfetti();
-        setTimeout(() => showToast(`🏁 ${t('workoutCongrats')}`, 'success', 3000), 100);
-        setTimeout(() => {
-          const bonusText = multiplier > 1 ? ` (x${multiplier} 🔥)` : '';
-          showToast(`+${xp} XP ${t('xpEarned')}${bonusText}`, 'xp', 3000);
-        }, 900);
-
-        newBadges.forEach((badge, i) => {
-          setTimeout(() => {
-            showToast(`${badge.icon} ${t(badge.nameKey)}!`, 'badge', 4000);
-          }, 1800 + i * 800);
-        });
-      }
+      // 🏋️‍♂️ Show RPE modal before finishing
+      showRpeModal((rpeValue) => {
+        _doFinishWorkout(rpeValue, finishBtn, navigateTo);
+      });
     });
   }
 
@@ -515,8 +515,26 @@ export function initWorkout(navigateTo) {
   // Rest timer skip
   const skipBtn = document.getElementById('restTimerSkip');
   if (skipBtn) {
-    skipBtn.addEventListener('click', clearRestTimer);
+    skipBtn.addEventListener('click', () => {
+      clearRestTimer();
+      restStartTime = Date.now(); // reset rest start after manual skip
+    });
   }
+
+  // 🔥 Warmup buttons
+  document.querySelectorAll('[data-warmup-ex]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const exIndex = parseInt(btn.dataset.warmupEx);
+      const workout = store.getActiveWorkout();
+      if (!workout) return;
+      const ex = workout.exercises[exIndex];
+      if (!ex) return;
+      // Get last entered weight for this exercise as target
+      const lastSet = ex.sets.length > 0 ? ex.sets[ex.sets.length - 1] : null;
+      const targetWeight = lastSet?.weight || 0;
+      showWarmupModal(exerciseIndex=exIndex, targetWeight);
+    });
+  });
 }
 
 function showExercisePicker() {
@@ -594,7 +612,8 @@ function startRestTimer(seconds) {
 
   restTimerInterval = setInterval(() => {
     remaining--;
-    value.textContent = remaining;
+    const el = document.getElementById('restTimerValue');
+    if (el) el.textContent = remaining;
     if (remaining <= 0) {
       clearRestTimer();
       showToast('⏰ ' + t('workoutRest') + '!', 'info');
@@ -609,4 +628,184 @@ function clearRestTimer() {
   }
   const container = document.getElementById('restTimerFloating');
   if (container) container.style.display = 'none';
+}
+
+// 🧠 RPE Modal — shown before finishing workout
+function showRpeModal(onComplete) {
+  const lang = i18n.getLang();
+  let selectedRPE = 5;
+
+  showModal({
+    title: t('rpeTitle'),
+    content: `
+      <div class="rpe-modal">
+        <p class="rpe-subtitle">${t('rpeSubtitle')}</p>
+        <div class="rpe-scale">
+          ${[1,2,3,4,5,6,7,8,9,10].map(v => `
+            <button class="rpe-btn ${v === selectedRPE ? 'active' : ''}" data-rpe="${v}">
+              <span class="rpe-num">${v}</span>
+            </button>
+          `).join('')}
+        </div>
+        <div class="rpe-labels">
+          <span>${t('rpeEasy')}</span>
+          <span>${t('rpeHard')}</span>
+        </div>
+      </div>
+    `,
+    actions: [
+      {
+        id: 'rpeSave',
+        label: `📊 ${t('rpeSave')}`,
+        class: 'btn-primary',
+        onClick: () => {
+          const activeBtn = document.querySelector('.rpe-btn.active');
+          const rpe = activeBtn ? parseInt(activeBtn.dataset.rpe) : selectedRPE;
+          onComplete(rpe);
+        },
+      },
+      {
+        id: 'rpeSkip',
+        label: t('rpeSkip'),
+        class: 'btn-secondary',
+        onClick: () => onComplete(null),
+      },
+    ],
+    className: 'modal-rpe',
+  });
+
+  // RPE button selection
+  setTimeout(() => {
+    document.querySelectorAll('.rpe-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.rpe-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        selectedRPE = parseInt(btn.dataset.rpe);
+      });
+    });
+  }, 50);
+}
+
+// 🏋️‍♂️ Do the actual workout finish logic after RPE
+function _doFinishWorkout(rpe, finishBtn, navigateTo) {
+  // Store RPE in the workout before finishing
+  const activeWo = store.getActiveWorkout();
+  if (activeWo && rpe !== null) {
+    activeWo.rpe = rpe;
+    store.set('activeWorkout', activeWo);
+  }
+
+  const workout = store.finishWorkout();
+  if (!workout) return;
+
+  // Calculate XP with streak multiplier
+  const streak = store.get('streak');
+  const multiplier = getStreakMultiplier(streak.current);
+  const baseXP = calculateWorkoutXP(workout);
+  const xp = Math.round(baseXP * multiplier);
+  store.addXP(xp);
+  const newBadges = checkAndAwardBadges();
+
+  // 📊 Discipline Score
+  let avgDiscipline = null;
+  if (disciplineScores.length > 0) {
+    avgDiscipline = Math.round(disciplineScores.reduce((a, b) => a + b, 0) / disciplineScores.length);
+    disciplineScores = []; // reset
+  }
+
+  // 🛡️ Shield / Shield earned
+  const shieldUsed = store._shieldUsed;
+  const shieldEarned = store._shieldEarned;
+  store._shieldUsed = false;
+  store._shieldEarned = false;
+
+  // Clear timers
+  clearRestTimer();
+  restStartTime = null;
+  if (workoutTimerInterval) {
+    clearInterval(workoutTimerInterval);
+    workoutTimerInterval = null;
+  }
+  timerStartTime = null;
+
+  // Navigate IMMEDIATELY to dashboard
+  if (navigateTo) navigateTo('dashboard');
+  else window.dispatchEvent(new CustomEvent('navigate', { detail: { page: 'dashboard' } }));
+
+  // Show celebration toasts
+  launchConfetti();
+  setTimeout(() => showToast(`🏁 ${t('workoutCongrats')}`, 'success', 3000), 100);
+  setTimeout(() => {
+    const bonusText = multiplier > 1 ? ` (x${multiplier} 🔥)` : '';
+    showToast(`+${xp} XP ${t('xpEarned')}${bonusText}`, 'xp', 3000);
+  }, 900);
+
+  // Discipline score toast
+  if (avgDiscipline !== null) {
+    setTimeout(() => {
+      let dLabel;
+      if (avgDiscipline >= 85) dLabel = t('disciplinePerfect');
+      else if (avgDiscipline >= 65) dLabel = t('disciplineGood');
+      else if (avgDiscipline >= 40) dLabel = t('disciplineFair');
+      else dLabel = t('disciplinePoor');
+      showToast(`⏱️ ${t('disciplineScore')}: %${avgDiscipline} — ${dLabel}`, 'info', 4000);
+    }, 1600);
+  }
+
+  // Shield toasts
+  if (shieldUsed) {
+    setTimeout(() => showToast(t('streakShieldUsed'), 'badge', 4000), 2200);
+  }
+  if (shieldEarned) {
+    setTimeout(() => showToast(t('streakShieldEarned'), 'badge', 4000), 2400);
+  }
+
+  // RPE confirmation
+  if (rpe !== null) {
+    setTimeout(() => showToast(`${t('rpeSaved')} (RPE: ${rpe}/10)`, 'info', 2500), 2800);
+  }
+
+  newBadges.forEach((badge, i) => {
+    setTimeout(() => {
+      showToast(`${badge.icon} ${t(badge.nameKey)}!`, 'badge', 4000);
+    }, 3200 + i * 800);
+  });
+}
+
+// 🔥 Warmup Modal
+function showWarmupModal(exerciseIndex, targetWeight) {
+  const lang = i18n.getLang();
+  const sets = calculateWarmupSets(targetWeight);
+  const timeMin = sets.length > 0 ? Math.ceil(estimateWarmupTime(sets) / 60) : 0;
+
+  const intensityColors = { low: '#4ade80', medium: '#facc15', high: '#f87171' };
+
+  const content = sets.length === 0
+    ? `<p class="warmup-no-need">${t('warmupNoNeed')}</p>`
+    : `
+      <div class="warmup-modal-content">
+        <p class="warmup-estimate">⏱️ ${t('warmupEstimate')}: ~${timeMin} ${t('warmupMin')}</p>
+        <div class="warmup-sets-list">
+          ${sets.map((s, i) => `
+            <div class="warmup-set-row" style="--intensity-color: ${intensityColors[s.intensity] || '#fff'}">
+              <span class="warmup-set-num">${i + 1}</span>
+              <span class="warmup-set-pct">${s.label}</span>
+              <span class="warmup-set-weight">${s.weight} kg</span>
+              <span class="warmup-set-reps">× ${s.reps} ${t('warmupReps')}</span>
+            </div>
+          `).join('')}
+        </div>
+        <p class="warmup-note">${lang === 'tr' ? 'ℹ️ Hedef ağırlığınızı girmeden önce bu setleri tamamlayın.' : 'ℹ️ Complete these sets before entering your working weight.'}</p>
+      </div>
+    `;
+
+  const workout_ = store.getActiveWorkout();
+  const exData = workout_ ? getExerciseById(workout_.exercises[exerciseIndex]?.exerciseId) : null;
+  const exName = exData ? (exData.name[lang] || exData.name.tr) : '';
+
+  showModal({
+    title: `${t('warmupTitle')} — ${exName} (${targetWeight}kg)`,
+    content,
+    className: 'modal-warmup',
+  });
 }

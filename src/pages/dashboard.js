@@ -1,7 +1,7 @@
 import { t, i18n } from '../i18n/index.js';
 import { store, getSimulatedFeed } from '../store.js';
 import { getLevelTitle, formatXP } from '../utils/xp.js';
-import { getCurrentLeague, formatTimeAgo, getActiveChallenge, getChallengeProgress } from '../utils/gamification.js';
+import { getCurrentLeague, formatTimeAgo, getActiveChallenge, getChallengeProgress, getWeeklyXpGoalProgress } from '../utils/gamification.js';
 
 export function renderDashboard() {
   const user = store.getUser();
@@ -14,6 +14,10 @@ export function renderDashboard() {
   const challenge = getActiveChallenge();
   const challengeProgress = getChallengeProgress();
   const activeWorkout = store.getActiveWorkout();
+
+  // Weekly XP Goal
+  const weeklyXP = store.getWeeklyXP();
+  const weeklyXpGoal = getWeeklyXpGoalProgress(xpInfo.total, weeklyXP);
 
   // Greeting based on time
   const hour = new Date().getHours();
@@ -194,6 +198,35 @@ export function renderDashboard() {
 
         <div class="challenge-reward">
           <span>🎁 +${challenge.xpReward} XP</span>
+        </div>
+      </div>
+
+      <!-- Weekly XP Goal Card -->
+      <div class="weekly-xp-card glass-card ${weeklyXpGoal.completed ? 'weekly-xp-complete' : ''}" id="weeklyXpCard">
+        <div class="weekly-xp-header">
+          <span class="weekly-xp-icon">⚡</span>
+          <div class="weekly-xp-title">
+            <h3>${t('weeklyXpGoal')}</h3>
+            <span class="weekly-xp-league" style="color: ${weeklyXpGoal.league.color}">
+              ${weeklyXpGoal.league.icon} ${t(weeklyXpGoal.league.nameKey)}
+            </span>
+          </div>
+          ${weeklyXpGoal.completed ? `<span class="weekly-xp-done">🎉</span>` : ''}
+        </div>
+        <div class="weekly-xp-progress">
+          <div class="weekly-xp-bar">
+            <div class="weekly-xp-fill ${weeklyXpGoal.completed ? 'complete' : ''}" 
+                 style="width: ${Math.min(weeklyXpGoal.progress * 100, 100)}%">
+            </div>
+          </div>
+          <div class="weekly-xp-info">
+            <span>${formatXP(weeklyXpGoal.current)} / ${formatXP(weeklyXpGoal.target)} XP</span>
+            <span>${Math.round(weeklyXpGoal.progress * 100)}%</span>
+          </div>
+        </div>
+        <div class="weekly-xp-rewards">
+          <span class="weekly-xp-reward-item">🎁 +${formatXP(weeklyXpGoal.bonusXP)} ${t('weeklyXpReward')}</span>
+          ${weeklyXpGoal.bonusShield ? `<span class="weekly-xp-reward-item shield-reward">🛡️ +1 ${t('streakShield')}</span>` : ''}
         </div>
       </div>
 

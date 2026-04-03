@@ -5,6 +5,7 @@ import { getCurrentLeague } from '../utils/gamification.js';
 import { badges, rarityColors } from '../data/badges.js';
 import { showModal } from '../components/modal.js';
 import { showToast } from '../components/toast.js';
+import { getExerciseById } from '../data/exercises.js';
 
 export function renderProfile() {
   const user = store.getUser();
@@ -41,6 +42,13 @@ export function renderProfile() {
   // Weight log data
   const weightLog = store.getWeightLog();
   const weightChartData = buildWeightChartSVG(weightLog);
+
+  // Streak shield
+  const shieldCount = store.getStreakShields();
+
+  // Volume analytics
+  const workoutsData = store.getWorkouts();
+  const volumeData = buildMuscleVolumeData(workoutsData);
 
   return `
     <div class="page page-profile" id="pageProfile">
@@ -95,6 +103,21 @@ export function renderProfile() {
         </div>
       </div>
 
+      <!-- Streak Shield -->
+      <div class="streak-shield-card glass-card">
+        <div class="shield-card-left">
+          <span class="shield-icon-lg">🛡️</span>
+          <div class="shield-info">
+            <h4>${t('streakShield')}</h4>
+            <p class="shield-desc">${t('streakShieldDesc')}</p>
+          </div>
+        </div>
+        <div class="shield-count ${shieldCount === 0 ? 'shield-empty' : ''}">
+          <span class="shield-num">${shieldCount}</span>
+          <span class="shield-label">${t('streakShieldCount')}</span>
+        </div>
+      </div>
+
       <!-- Weight Tracker -->
       <div class="weight-tracker glass-card">
         <div class="weight-tracker-header">
@@ -122,6 +145,28 @@ export function renderProfile() {
             <p>⚖️ ${t('weightNoData')}</p>
           </div>
         `}
+      </div>
+
+      <!-- Volume Analytics -->
+      <div class="volume-analytics glass-card">
+        <div class="volume-header">
+          <h3>${t('volumeAnalytics')}</h3>
+          <span class="volume-period">${t('thisWeek')}</span>
+        </div>
+        ${volumeData.length === 0
+          ? `<p class="volume-empty">💪 ${t('volumeNoData')}</p>`
+          : `<div class="volume-bars">
+            ${volumeData.map(m => `
+              <div class="volume-muscle-row">
+                <span class="volume-muscle-label">${m.icon} ${lang === 'tr' ? m.nameTR : m.nameEN}</span>
+                <div class="volume-bar-container">
+                  <div class="volume-bar-fill" style="width: ${m.pct}%; background: ${m.color}"></div>
+                </div>
+                <span class="volume-muscle-val">${m.volume >= 1000 ? (m.volume/1000).toFixed(1)+'k' : m.volume}kg</span>
+              </div>
+            `).join('')}
+          </div>`
+        }
       </div>
 
       <!-- Streak Calendar -->
@@ -194,6 +239,53 @@ function getWeightChangeIndicator(weightLog) {
   if (diff < 0) return `↓ ${diff}kg`;
   return '= 0kg';
 }
+
+// 📊 Muscle group volume analytics (this week)
+function buildMuscleVolumeData(workouts) {
+  const muscleGroups = [
+    { id: 'chest',     nameTR: 'Göğüs',   nameEN: 'Chest',     icon: '💪', color: '#f87171', categories: ['chest'] },
+    { id: 'back',      nameTR: 'Sırt',     nameEN: 'Back',      icon: '🔙', color: '#60a5fa', categories: ['back'] },
+    { id: 'legs',      nameTR: 'Bacak',    nameEN: 'Legs',      icon: '🦵', color: '#4ade80', categories: ['legs'] },
+    { id: 'shoulders', nameTR: 'Omuz',     nameEN: 'Shoulders', icon: '🏋️', color: '#facc15', categories: ['shoulders'] },
+    { id: 'arms',      nameTR: 'Kol',      nameEN: 'Arms',      icon: '💪', color: '#c084fc', categories: ['arms'] },
+    { id: 'core',      nameTR: 'Karın',    nameEN: 'Core',      icon: '🎯', color: '#fb923c', categories: ['core'] },
+    { id: 'cardio',    nameTR: 'Kardiyo',  nameEN: 'Cardio',    icon: '🏃', color: '#34d399', categories: ['cardio'] },
+  ];
+
+  // Filter to this week's workouts
+  const now = new Date();
+  const startOfWeek = new Date(now);
+  startOfWeek.setDate(now.getDate() - now.getDay());
+  startOfWeek.setHours(0, 0, 0, 0);
+  const weekWorkouts = workouts.filter(w => w.startTime >= startOfWeek.getTime());
+
+  // Aggregate volume by exercise category
+  const volumeMap = {};
+  weekWorkouts.forEach(w => {
+    (w.exercises || []).forEach(ex => {
+      const exData = getExerciseById(ex.exerciseId);
+      if (!exData) return;
+      const cat = exData.category || 'other';
+      const exVolume = (ex.sets || []).reduce((sum, s) => sum + (s.weight || 0) * (s.reps || 0), 0);
+      volumeMap[cat] = (volumeMap[cat] || 0) + exVolume;
+    });
+  });
+
+  // Map to muscle groups, sort by volume desc
+  const result = muscleGroups
+    .map(mg => ({
+      ...mg,
+      volume: mg.categories.reduce((s, c) => s + (volumeMap[c] || 0), 0),
+    }))
+    .filter(mg => mg.volume > 0)
+    .sort((a, b) => b.volume - a.volume);
+
+  if (result.length === 0) return [];
+
+  const maxVol = result[0].volume;
+  return result.map(mg => ({ ...mg, pct: Math.round((mg.volume / maxVol) * 100) }));
+}
+
 
 function buildWeightChartSVG(weightLog) {
   if (weightLog.length < 2) return '<div class="weight-chart-placeholder">📊</div>';

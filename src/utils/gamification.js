@@ -2,10 +2,10 @@ import { badges, checkBadges } from '../data/badges.js';
 import { store } from '../store.js';
 
 export const LEAGUES = [
-  { id: 'bronze', nameKey: 'leagueBronze', icon: '🥉', minXP: 0, color: '#cd7f32' },
-  { id: 'silver', nameKey: 'leagueSilver', icon: '🥈', minXP: 2000, color: '#c0c0c0' },
-  { id: 'gold', nameKey: 'leagueGold', icon: '🥇', minXP: 5000, color: '#ffd700' },
-  { id: 'diamond', nameKey: 'leagueDiamond', icon: '💎', minXP: 10000, color: '#b9f2ff' },
+  { id: 'bronze', nameKey: 'leagueBronze', icon: '🥉', minXP: 0, color: '#cd7f32', weeklyXpGoal: 300 },
+  { id: 'silver', nameKey: 'leagueSilver', icon: '🥈', minXP: 2000, color: '#c0c0c0', weeklyXpGoal: 500 },
+  { id: 'gold', nameKey: 'leagueGold', icon: '🥇', minXP: 5000, color: '#ffd700', weeklyXpGoal: 750 },
+  { id: 'diamond', nameKey: 'leagueDiamond', icon: '💎', minXP: 10000, color: '#b9f2ff', weeklyXpGoal: 1000 },
 ];
 
 export function getCurrentLeague(xp) {
@@ -13,6 +13,22 @@ export function getCurrentLeague(xp) {
     if (xp >= LEAGUES[i].minXP) return LEAGUES[i];
   }
   return LEAGUES[0];
+}
+
+/**
+ * Get the weekly XP goal for the current league.
+ * @param {number} totalXP
+ * @returns {{ target: number, current: number, progress: number, completed: boolean, bonusXP: number, bonusShield: boolean }}
+ */
+export function getWeeklyXpGoalProgress(totalXP, weeklyXPearned) {
+  const league = getCurrentLeague(totalXP);
+  const target = league.weeklyXpGoal;
+  const current = Math.min(weeklyXPearned, target);
+  const progress = current / target;
+  const completed = current >= target;
+  const bonusXP = Math.round(target * 0.5); // 50% bonus on completion
+  const bonusShield = completed && league.id !== 'bronze'; // shield for silver+
+  return { target, current, progress, completed, bonusXP, bonusShield, league };
 }
 
 export function checkAndAwardBadges() {

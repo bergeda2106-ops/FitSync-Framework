@@ -20,18 +20,22 @@ export function calculateWorkoutXP(workout) {
   // Base XP for completing a workout
   xp += 50;
 
-  // XP per exercise
-  xp += (workout.exercises || []).length * 15;
-
-  // XP per completed set
+  // XP per exercise (only count exercises with at least 1 valid set)
+  let validExerciseCount = 0;
   (workout.exercises || []).forEach(ex => {
-    (ex.sets || []).forEach(s => {
-      xp += 5; // per set
+    const validSets = (ex.sets || []).filter(s => s.weight > 0 && s.reps >= 1);
+    if (validSets.length === 0) return; // skip empty/invalid exercises
+    validExerciseCount++;
+
+    validSets.forEach(s => {
+      xp += 5; // per valid set
       // Bonus for heavy weight
       if (s.weight >= 100) xp += 10;
       else if (s.weight >= 60) xp += 5;
     });
   });
+
+  xp += validExerciseCount * 15;
 
   // Duration bonus
   const durationMin = (workout.duration || 0) / 60000;

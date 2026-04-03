@@ -2,7 +2,6 @@ import { t, i18n } from '../i18n/index.js';
 import { askAiCoach, PERSONALITIES } from '../api/ai.js';
 import { store } from '../store.js';
 import { showToast } from '../components/toast.js';
-import { getExerciseById } from '../data/exercises.js';
 
 let currentPersonality = 'kanka';
 
@@ -104,22 +103,34 @@ function buildWorkoutContext() {
   const workouts = store.getWorkouts();
   const lang = i18n.getLang();
   const recent = workouts.slice(-3);
-  
+
   if (recent.length === 0) return '';
 
-  let context = lang === 'tr' ? '\n\nSon antrenmanlar:\n' : '\n\nRecent workouts:\n';
+  let context = lang === 'tr' ? '\n\nSon antrenman özetleri:\n' : '\n\nRecent workout summaries:\n';
   recent.forEach((w, i) => {
     const date = new Date(w.startTime).toLocaleDateString(lang === 'tr' ? 'tr-TR' : 'en-US');
     const duration = w.duration ? Math.floor(w.duration / 60000) : 0;
-    const exNames = (w.exercises || []).map(ex => {
-      const data = getExerciseById(ex.exerciseId);
-      return data ? (data.name[lang] || data.name.tr) : ex.exerciseId;
-    }).join(', ');
     const totalSets = (w.exercises || []).reduce((s, ex) => s + (ex.sets?.length || 0), 0);
-    context += `${i + 1}. ${date} — ${exNames} (${totalSets} set, ${duration} dk)\n`;
+    const totalVolume = (w.exercises || []).reduce((sum, ex) =>
+      sum + (ex.sets || []).reduce((s2, s) => s2 + (s.weight || 0) * (s.reps || 0), 0), 0
+    );
+    const exerciseCount = (w.exercises || []).length;
+    const rpeText = w.rpe ? ` | RPE: ${w.rpe}/10` : '';
+    context += `${i + 1}. ${date} — ${exerciseCount} ${lang === 'tr' ? 'egzersiz' : 'exercises'}, ${totalSets} set, ${duration} ${lang === 'tr' ? 'dk' : 'min'}, ${totalVolume >= 1000 ? (totalVolume/1000).toFixed(1)+'k' : totalVolume}kg hacim${rpeText}\n`;
   });
+
+  // Include PR count for context
+  const prs = store.get('personalRecords') || {};
+  const prCount = Object.keys(prs).length;
+  if (prCount > 0) {
+    context += lang === 'tr'
+      ? `Kişisel Rekordlar: ${prCount} egzersizde PR var.\n`
+      : `Personal Records: Has PRs in ${prCount} exercises.\n`;
+  }
+
   return context;
 }
+
 
 export function initAICoach() {
   const sendBtn = document.getElementById('sendBtn');
