@@ -24,6 +24,11 @@ const defaultData = {
   friends: [],
   personalRecords: {},
   settings: { lang: 'tr', notifications: true },
+  weightLog: [],
+  workoutTemplates: [],
+  aiChatHistory: [],
+  restTimerPrefs: { default: 90 },
+  weeklySummaryDismissed: null,
 };
 
 // Simulated friends data
@@ -145,7 +150,7 @@ class Store {
       const docSnap = await getDoc(docRef);
       if (docSnap.exists()) {
         const cloudData = docSnap.data();
-        if (cloudData.updatedAt && (!this.data.updatedAt || cloudData.updatedAt > this.data.updatedAt)) {
+        if (cloudData.updatedAt && ((cloudData.updatedAt || 0) > (this.data.updatedAt || 0))) {
           this.data = { ...defaultData, ...cloudData };
           localStorage.setItem(STORAGE_KEY, JSON.stringify(this.data));
           this.notify();
@@ -253,6 +258,13 @@ class Store {
     const workout = this.data.activeWorkout;
     if (!workout || !workout.exercises[exerciseIndex]) return;
     workout.exercises[exerciseIndex].sets.splice(setIndex, 1);
+    this.set('activeWorkout', workout);
+  }
+
+  removeExerciseFromWorkout(exerciseIndex) {
+    const workout = this.data.activeWorkout;
+    if (!workout) return;
+    workout.exercises.splice(exerciseIndex, 1);
     this.set('activeWorkout', workout);
   }
 
@@ -401,6 +413,90 @@ class Store {
     this.update('gym', g => ({ ...g, checkedIn: false, checkInTime: null }));
   }
 
+  // Weight Log
+  getWeightLog() { return this.data.weightLog || []; }
+  addWeightEntry(weight) {
+    const log = this.data.weightLog || [];
+    const today = new Date().toDateString();
+    // Replace if already logged today
+    const existingIdx = log.findIndex(e => new Date(e.date).toDateString() === today);
+    if (existingIdx >= 0) {
+      log[existingIdx] = { date: Date.now(), weight };
+    } else {
+      log.push({ date: Date.now(), weight });
+    }
+    this.set('weightLog', log);
+  }
+
+  // Workout Templates
+  getWorkoutTemplates() { return this.data.workoutTemplates || []; }
+  saveWorkoutTemplate(template) {
+    const templates = this.data.workoutTemplates || [];
+    templates.push({ ...template, id: `tpl_${Date.now()}`, createdAt: Date.now() });
+    this.set('workoutTemplates', templates);
+  }
+  deleteWorkoutTemplate(templateId) {
+    const templates = (this.data.workoutTemplates || []).filter(t => t.id !== templateId);
+    this.set('workoutTemplates', templates);
+  }
+
+  // AI Chat History
+  getAIChatHistory() { return this.data.aiChatHistory || []; }
+  addAIChatMessage(message, isAi) {
+    const history = this.data.aiChatHistory || [];
+    history.push({ text: message, isAi, timestamp: Date.now() });
+    // Keep last 50 messages
+    if (history.length > 50) history.splice(0, history.length - 50);
+    this.set('aiChatHistory', history);
+  }
+  clearAIChatHistory() {
+    this.set('aiChatHistory', []);
+  }
+
+  // Rest Timer Preferences
+  getRestTimerPrefs() { return this.data.restTimerPrefs || { default: 90 }; }
+  setRestTimerDefault(seconds) {
+    this.update('restTimerPrefs', p => ({ ...p, default: seconds }));
+  }
+
+  // Weekly Summary
+  getWeeklySummaryDismissed() { return this.data.weeklySummaryDismissed; }
+  dismissWeeklySummary() {
+    const weekId = this.getWeekId();
+    this.set('weeklySummaryDismissed', weekId);
+  }
+  getWeekId() {
+    return Math.floor(Date.now() / (7 * 24 * 60 * 60 * 1000));
+  }
+  getLastWeekStats() {
+    const now = new Date();
+    const startOfThisWeek = new Date(now);
+    startOfThisWeek.setDate(now.getDate() - now.getDay());
+    startOfThisWeek.setHours(0, 0, 0, 0);
+    const startOfLastWeek = new Date(startOfThisWeek.getTime() - 7 * 86400000);
+
+    const workouts = (this.data.workouts || []).filter(w =>
+      w.startTime >= startOfLastWeek.getTime() && w.startTime < startOfThisWeek.getTime()
+    );
+
+    let totalVolume = 0;
+    let totalSets = 0;
+    workouts.forEach(w => {
+      (w.exercises || []).forEach(ex => {
+        (ex.sets || []).forEach(s => {
+          totalVolume += (s.weight || 0) * (s.reps || 0);
+          totalSets++;
+        });
+      });
+    });
+
+    return {
+      workoutCount: workouts.length,
+      totalVolume,
+      totalSets,
+    };
+  }
+
   // Stats helpers
   getStats() {
     const workouts = this.data.workouts || [];
@@ -429,8 +525,20 @@ class Store {
       currentStreak: this.data.streak.current,
       earlyWorkout,
       lateWorkout,
-      gymRealOnTimeWeek: 0,
+      gymRealOnTimeWeek: this.calculateGymRealOnTimeWeek(),
     };
+  }
+
+  calculateGymRealOnTimeWeek() {
+    const posts = this.data.gymReal?.posts || [];
+    const now = new Date();
+    const startOfWeek = new Date(now);
+    startOfWeek.setDate(now.getDate() - now.getDay());
+    startOfWeek.setHours(0, 0, 0, 0);
+    return posts.filter(p => {
+      const postDate = new Date(p.timestamp);
+      return postDate >= startOfWeek && p.onTime;
+    }).length;
   }
 
   // Reset
@@ -438,6 +546,12 @@ class Store {
     localStorage.removeItem(STORAGE_KEY);
     this.data = { ...defaultData };
     this.notify();
+
+    // Also clear Firebase data
+    if (db) {
+      setDoc(doc(db, 'users', this.deviceId), { ...defaultData, updatedAt: Date.now() })
+        .catch(e => console.error("Firebase reset error:", e));
+    }
   }
 }
 

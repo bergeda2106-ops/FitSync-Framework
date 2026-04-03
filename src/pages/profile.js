@@ -38,6 +38,10 @@ export function renderProfile() {
     });
   }
 
+  // Weight log data
+  const weightLog = store.getWeightLog();
+  const weightChartData = buildWeightChartSVG(weightLog);
+
   return `
     <div class="page page-profile" id="pageProfile">
       <header class="page-header">
@@ -89,6 +93,35 @@ export function renderProfile() {
           <span class="stat-tile-value">${formatXP(xpInfo.total)}</span>
           <span class="stat-tile-label">${t('profileCurrentXP')}</span>
         </div>
+      </div>
+
+      <!-- Weight Tracker -->
+      <div class="weight-tracker glass-card">
+        <div class="weight-tracker-header">
+          <h3>⚖️ ${t('weightTracker')}</h3>
+          <button class="weight-add-btn" id="weightAddBtn">+ ${t('weightAdd')}</button>
+        </div>
+        ${weightLog.length > 0 ? `
+          <div class="weight-current-row">
+            <div class="weight-current">
+              <span class="weight-current-value">${weightLog[weightLog.length - 1].weight}</span>
+              <span class="weight-current-unit">kg</span>
+            </div>
+            ${weightLog.length >= 2 ? `
+              <div class="weight-change ${weightLog[weightLog.length - 1].weight < weightLog[weightLog.length - 2].weight ? 'down' : weightLog[weightLog.length - 1].weight > weightLog[weightLog.length - 2].weight ? 'up' : 'same'}">
+                ${getWeightChangeIndicator(weightLog)}
+              </div>
+            ` : ''}
+          </div>
+          <div class="weight-chart" id="weightChart">
+            ${weightChartData}
+          </div>
+          <div class="weight-chart-label">${t('weightLast30')}</div>
+        ` : `
+          <div class="weight-empty">
+            <p>⚖️ ${t('weightNoData')}</p>
+          </div>
+        `}
       </div>
 
       <!-- Streak Calendar -->
@@ -153,6 +186,60 @@ export function renderProfile() {
   `;
 }
 
+function getWeightChangeIndicator(weightLog) {
+  const current = weightLog[weightLog.length - 1].weight;
+  const previous = weightLog[weightLog.length - 2].weight;
+  const diff = (current - previous).toFixed(1);
+  if (diff > 0) return `↑ +${diff}kg`;
+  if (diff < 0) return `↓ ${diff}kg`;
+  return '= 0kg';
+}
+
+function buildWeightChartSVG(weightLog) {
+  if (weightLog.length < 2) return '<div class="weight-chart-placeholder">📊</div>';
+
+  const last30 = weightLog.slice(-30);
+  const weights = last30.map(e => e.weight);
+  const minW = Math.min(...weights) - 1;
+  const maxW = Math.max(...weights) + 1;
+  const range = maxW - minW || 1;
+
+  const width = 320;
+  const height = 100;
+  const padding = 10;
+
+  const points = last30.map((entry, i) => {
+    const x = padding + (i / (last30.length - 1)) * (width - 2 * padding);
+    const y = height - padding - ((entry.weight - minW) / range) * (height - 2 * padding);
+    return `${x},${y}`;
+  });
+
+  const pathD = points.map((p, i) => (i === 0 ? 'M' : 'L') + p).join(' ');
+  
+  // Area fill
+  const areaD = pathD + ` L${padding + ((last30.length - 1) / (last30.length - 1)) * (width - 2 * padding)},${height - padding} L${padding},${height - padding} Z`;
+
+  return `
+    <svg viewBox="0 0 ${width} ${height}" class="weight-svg">
+      <defs>
+        <linearGradient id="weightGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+          <stop offset="0%" style="stop-color: var(--primary); stop-opacity: 0.3"/>
+          <stop offset="100%" style="stop-color: var(--primary); stop-opacity: 0.02"/>
+        </linearGradient>
+      </defs>
+      <path d="${areaD}" fill="url(#weightGrad)" />
+      <path d="${pathD}" fill="none" stroke="var(--primary)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
+      ${last30.map((entry, i) => {
+        const x = padding + (i / (last30.length - 1)) * (width - 2 * padding);
+        const y = height - padding - ((entry.weight - minW) / range) * (height - 2 * padding);
+        return i === last30.length - 1 ? `<circle cx="${x}" cy="${y}" r="4" fill="var(--primary)" stroke="var(--bg-main)" stroke-width="2"/>` : '';
+      }).join('')}
+      <text x="${padding}" y="${padding + 4}" class="chart-label" fill="var(--text-secondary)" font-size="8">${maxW.toFixed(0)}kg</text>
+      <text x="${padding}" y="${height - 2}" class="chart-label" fill="var(--text-secondary)" font-size="8">${minW.toFixed(0)}kg</text>
+    </svg>
+  `;
+}
+
 export function initProfile(navigateTo) {
   // Settings button
   const settingsBtn = document.getElementById('settingsBtn');
@@ -173,6 +260,52 @@ export function initProfile(navigateTo) {
       store.togglePinBadge(badgeId);
       navigateTo('profile');
     });
+  });
+
+  // Weight add button
+  const weightAddBtn = document.getElementById('weightAddBtn');
+  if (weightAddBtn) {
+    weightAddBtn.addEventListener('click', () => openWeightModal(navigateTo));
+  }
+}
+
+function openWeightModal(navigateTo) {
+  const user = store.getUser() || {};
+  const lang = i18n.getLang();
+  const currentWeight = user.weight || '';
+
+  showModal({
+    title: `⚖️ ${t('weightAdd')}`,
+    content: `
+      <div class="weight-modal">
+        <div class="form-group">
+          <label>${t('weightCurrent')}</label>
+          <div class="weight-input-row">
+            <input type="number" id="weightInput" class="form-input weight-big-input" 
+                   value="${currentWeight}" placeholder="75" min="30" max="300" step="0.1">
+            <span class="weight-unit">kg</span>
+          </div>
+        </div>
+      </div>
+    `,
+    actions: [{
+      id: 'logWeight',
+      label: `💾 ${t('save')}`,
+      class: 'btn-primary',
+      onClick: () => {
+        const weight = parseFloat(document.getElementById('weightInput')?.value);
+        if (weight && weight > 0) {
+          store.addWeightEntry(weight);
+          // Also update user profile weight
+          const user = store.getUser();
+          if (user) {
+            store.setUser({ ...user, weight });
+          }
+          showToast(`⚖️ ${weight}kg ✅`, 'success');
+          navigateTo('profile');
+        }
+      },
+    }],
   });
 }
 

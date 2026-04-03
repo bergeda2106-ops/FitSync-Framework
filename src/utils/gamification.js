@@ -2,7 +2,7 @@ import { badges, checkBadges } from '../data/badges.js';
 import { store } from '../store.js';
 
 export const LEAGUES = [
-  { id: 'bronze', nameKey: 'leageBronze', icon: '🥉', minXP: 0, color: '#cd7f32' },
+  { id: 'bronze', nameKey: 'leagueBronze', icon: '🥉', minXP: 0, color: '#cd7f32' },
   { id: 'silver', nameKey: 'leagueSilver', icon: '🥈', minXP: 2000, color: '#c0c0c0' },
   { id: 'gold', nameKey: 'leagueGold', icon: '🥇', minXP: 5000, color: '#ffd700' },
   { id: 'diamond', nameKey: 'leagueDiamond', icon: '💎', minXP: 10000, color: '#b9f2ff' },
@@ -69,6 +69,44 @@ export const weeklyChallenges = [
 export function getActiveChallenge() {
   const weekNum = Math.floor(Date.now() / (7 * 24 * 60 * 60 * 1000));
   return weeklyChallenges[weekNum % weeklyChallenges.length];
+}
+
+export function getChallengeProgress() {
+  const challenge = getActiveChallenge();
+  const workouts = store.getWorkouts();
+
+  // Filter workouts from this week
+  const now = new Date();
+  const startOfWeek = new Date(now);
+  startOfWeek.setDate(now.getDate() - now.getDay());
+  startOfWeek.setHours(0, 0, 0, 0);
+  const weekWorkouts = workouts.filter(w => w.startTime >= startOfWeek.getTime());
+
+  let current = 0;
+  const target = challenge.target;
+
+  if (challenge.exerciseId) {
+    // Count workouts that include this exercise
+    weekWorkouts.forEach(w => {
+      const hasExercise = (w.exercises || []).some(ex => ex.exerciseId === challenge.exerciseId);
+      if (hasExercise) current++;
+    });
+  } else if (challenge.type === 'volume') {
+    // Sum total volume
+    weekWorkouts.forEach(w => {
+      (w.exercises || []).forEach(ex => {
+        (ex.sets || []).forEach(s => {
+          current += (s.weight || 0) * (s.reps || 0);
+        });
+      });
+    });
+  } else if (challenge.category) {
+    // Count workouts in category
+    current = weekWorkouts.length;
+  }
+
+  const progress = Math.min(current / target, 1);
+  return { current, target, progress, completed: current >= target };
 }
 
 export function formatTimeAgo(timestamp, lang = 'tr') {

@@ -4,10 +4,51 @@ import { exercises, categories, getExercisesByCategory, getExerciseById } from '
 import { showModal, closeModal } from '../components/modal.js';
 import { showToast } from '../components/toast.js';
 import { launchConfetti } from '../components/confetti.js';
-import { calculateWorkoutXP } from '../utils/xp.js';
+import { calculateWorkoutXP, getStreakMultiplier } from '../utils/xp.js';
 import { checkAndAwardBadges } from '../utils/gamification.js';
 
 let restTimerInterval = null;
+let workoutTimerInterval = null;
+
+// Preset workout templates
+const presetTemplates = [
+  {
+    id: 'preset_push',
+    nameKey: 'templatePush',
+    icon: '🏋️',
+    exercises: ['bench_press', 'incline_bench', 'dumbbell_fly', 'overhead_press', 'lateral_raise', 'tricep_pushdown']
+  },
+  {
+    id: 'preset_pull',
+    nameKey: 'templatePull',
+    icon: '🔙',
+    exercises: ['deadlift', 'lat_pulldown', 'barbell_row', 'seated_cable_row', 'face_pull', 'bicep_curl']
+  },
+  {
+    id: 'preset_legs',
+    nameKey: 'templateLegs',
+    icon: '🦵',
+    exercises: ['squat', 'leg_press', 'romanian_deadlift', 'leg_extension', 'leg_curl', 'calf_raise']
+  },
+  {
+    id: 'preset_fullbody',
+    nameKey: 'templateFullBody',
+    icon: '💪',
+    exercises: ['squat', 'bench_press', 'barbell_row', 'overhead_press', 'bicep_curl', 'crunch']
+  },
+  {
+    id: 'preset_upper',
+    nameKey: 'templateUpperBody',
+    icon: '🏋️',
+    exercises: ['bench_press', 'barbell_row', 'overhead_press', 'lat_pulldown', 'bicep_curl', 'tricep_pushdown']
+  },
+  {
+    id: 'preset_lower',
+    nameKey: 'templateLowerBody',
+    icon: '🦵',
+    exercises: ['squat', 'leg_press', 'romanian_deadlift', 'lunges', 'leg_curl', 'calf_raise']
+  },
+];
 
 export function renderWorkout() {
   const activeWorkout = store.getActiveWorkout();
@@ -17,6 +58,8 @@ export function renderWorkout() {
   if (activeWorkout) {
     return renderActiveWorkout(activeWorkout, lang);
   }
+
+  const customTemplates = store.getWorkoutTemplates();
 
   return `
     <div class="page page-workout" id="pageWorkout">
@@ -29,6 +72,57 @@ export function renderWorkout() {
         <span class="btn-icon">🏋️</span>
         <span>${t('workoutStart')}</span>
       </button>
+
+      <!-- Templates Section -->
+      <div class="templates-section">
+        <h2 class="section-title">📋 ${t('templateTitle')}</h2>
+        
+        <!-- Preset Templates -->
+        <div class="template-subsection">
+          <h3 class="subsection-title">${t('templatePresets')}</h3>
+          <div class="templates-grid">
+            ${presetTemplates.map(tpl => `
+              <button class="template-card glass-card" data-template-preset="${tpl.id}">
+                <span class="template-icon">${tpl.icon}</span>
+                <span class="template-name">${t(tpl.nameKey)}</span>
+                <span class="template-count">${tpl.exercises.length} ${lang === 'tr' ? 'egzersiz' : 'exercises'}</span>
+              </button>
+            `).join('')}
+          </div>
+        </div>
+
+        <!-- Custom Templates -->
+        ${customTemplates.length > 0 ? `
+          <div class="template-subsection">
+            <h3 class="subsection-title">${t('templateCustom')}</h3>
+            <div class="templates-grid">
+              ${customTemplates.map(tpl => `
+                <div class="template-card glass-card custom-template" data-template-custom="${tpl.id}">
+                  <span class="template-icon">📋</span>
+                  <span class="template-name">${tpl.name}</span>
+                  <span class="template-count">${tpl.exercises.length} ${lang === 'tr' ? 'egzersiz' : 'exercises'}</span>
+                  <button class="template-delete-btn" data-delete-template="${tpl.id}">✕</button>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        ` : ''}
+      </div>
+
+      <!-- Rest Timer Settings -->
+      <div class="rest-timer-settings glass-card">
+        <h3>⏱️ ${t('restTimerSettings')}</h3>
+        <div class="rest-timer-options">
+          ${[60, 90, 120, 180].map(sec => {
+            const prefs = store.getRestTimerPrefs();
+            return `
+              <button class="rest-option-btn ${prefs.default === sec ? 'active' : ''}" data-rest-time="${sec}">
+                ${t('restTimer' + sec)}
+              </button>
+            `;
+          }).join('')}
+        </div>
+      </div>
 
       <!-- Workout History -->
       <div class="workout-history">
@@ -46,6 +140,7 @@ function renderActiveWorkout(workout, lang) {
   const elapsed = Date.now() - workout.startTime;
   const minutes = Math.floor(elapsed / 60000);
   const seconds = Math.floor((elapsed % 60000) / 1000);
+  const restPrefs = store.getRestTimerPrefs();
 
   return `
     <div class="page page-workout active-workout" id="pageWorkout">
@@ -64,6 +159,7 @@ function renderActiveWorkout(workout, lang) {
               <div class="exercise-header">
                 <span class="exercise-icon">${exerciseData?.icon || '💪'}</span>
                 <h3>${exName}</h3>
+                <button class="exercise-remove-btn" data-remove-exercise="${exIndex}" title="🗑️">🗑️</button>
               </div>
               <div class="sets-list">
                 <div class="set-header-row">
@@ -100,16 +196,21 @@ function renderActiveWorkout(workout, lang) {
       <!-- Rest Timer -->
       <div class="rest-timer-floating" id="restTimerFloating" style="display:none;">
         <div class="rest-timer-circle">
-          <span class="rest-timer-value" id="restTimerValue">90</span>
+          <span class="rest-timer-value" id="restTimerValue">${restPrefs.default}</span>
           <span class="rest-timer-label">${t('workoutRest')}</span>
         </div>
         <button class="rest-timer-skip" id="restTimerSkip">⏭</button>
       </div>
 
-      <!-- Finish Button -->
-      <button class="finish-workout-btn" id="finishWorkoutBtn">
-        <span>🏁 ${t('workoutFinish')}</span>
-      </button>
+      <!-- Action Buttons -->
+      <div class="workout-action-row">
+        <button class="save-template-btn glass-card" id="saveTemplateBtn">
+          📋 ${t('templateSave')}
+        </button>
+        <button class="finish-workout-btn" id="finishWorkoutBtn">
+          <span>🏁 ${t('workoutFinish')}</span>
+        </button>
+      </div>
     </div>
   `;
 }
@@ -163,6 +264,92 @@ export function initWorkout(navigateTo) {
     });
   }
 
+  // Preset templates
+  document.querySelectorAll('[data-template-preset]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const presetId = btn.dataset.templatePreset;
+      const preset = presetTemplates.find(p => p.id === presetId);
+      if (preset) {
+        store.startWorkout();
+        preset.exercises.forEach(exId => store.addExerciseToWorkout(exId));
+        showToast(`📋 ${t('templateLoaded')}`, 'success');
+        navigateTo('workout');
+      }
+    });
+  });
+
+  // Custom templates
+  document.querySelectorAll('[data-template-custom]').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      if (e.target.classList.contains('template-delete-btn')) return;
+      const tplId = btn.dataset.templateCustom;
+      const templates = store.getWorkoutTemplates();
+      const tpl = templates.find(t => t.id === tplId);
+      if (tpl) {
+        store.startWorkout();
+        tpl.exercises.forEach(exId => store.addExerciseToWorkout(exId));
+        showToast(`📋 ${t('templateLoaded')}`, 'success');
+        navigateTo('workout');
+      }
+    });
+  });
+
+  // Delete template
+  document.querySelectorAll('[data-delete-template]').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const tplId = btn.dataset.deleteTemplate;
+      store.deleteWorkoutTemplate(tplId);
+      showToast(`🗑️ ${t('templateDelete')}`, 'info');
+      navigateTo('workout');
+    });
+  });
+
+  // Rest timer option buttons
+  document.querySelectorAll('[data-rest-time]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const sec = parseInt(btn.dataset.restTime);
+      store.setRestTimerDefault(sec);
+      document.querySelectorAll('[data-rest-time]').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      showToast(`⏱️ ${sec}s`, 'success', 1500);
+    });
+  });
+
+  // Save as template button
+  const saveTemplateBtn = document.getElementById('saveTemplateBtn');
+  if (saveTemplateBtn) {
+    saveTemplateBtn.addEventListener('click', () => {
+      const workout = store.getActiveWorkout();
+      if (!workout || workout.exercises.length === 0) return;
+
+      const lang = i18n.getLang();
+      showModal({
+        title: `📋 ${t('templateSave')}`,
+        content: `
+          <div class="form-group">
+            <label>${t('templateName')}</label>
+            <input type="text" id="templateNameInput" class="form-input" placeholder="${lang === 'tr' ? 'Örn: Pazartesi Antrenmanı' : 'e.g. Monday Workout'}">
+          </div>
+        `,
+        actions: [{
+          id: 'saveTpl',
+          label: `💾 ${t('save')}`,
+          class: 'btn-primary',
+          onClick: () => {
+            const name = document.getElementById('templateNameInput')?.value.trim();
+            if (!name) return;
+            store.saveWorkoutTemplate({
+              name,
+              exercises: workout.exercises.map(ex => ex.exerciseId),
+            });
+            showToast(`📋 ${t('templateSaved')}`, 'success');
+          },
+        }],
+      });
+    });
+  }
+
   // Add exercise
   const addExBtn = document.getElementById('addExerciseBtn');
   if (addExBtn) {
@@ -190,8 +377,12 @@ export function initWorkout(navigateTo) {
           showToast(`${t('workoutPR')} ${weight}kg`, 'pr', 4000);
         }
 
-        // Start rest timer
-        startRestTimer(90);
+        // Actually add XP per set (Bug #2 fix)
+        store.addXP(5);
+
+        // Start rest timer with user preference
+        const restPrefs = store.getRestTimerPrefs();
+        startRestTimer(restPrefs.default);
 
         // XP toast
         showToast('+5 XP', 'xp', 1500);
@@ -211,13 +402,37 @@ export function initWorkout(navigateTo) {
     });
   });
 
+  // Remove exercise buttons
+  document.querySelectorAll('.exercise-remove-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const exIndex = parseInt(btn.dataset.removeExercise);
+      store.removeExerciseFromWorkout(exIndex);
+      showToast('🗑️', 'info', 1000);
+      navigateTo('workout');
+    });
+  });
+
   // Finish workout
   const finishBtn = document.getElementById('finishWorkoutBtn');
   if (finishBtn) {
     finishBtn.addEventListener('click', () => {
+      // Bug #3: Prevent finishing empty workout
+      const currentWorkout = store.getActiveWorkout();
+      if (currentWorkout) {
+        const totalSets = (currentWorkout.exercises || []).reduce((sum, ex) => sum + (ex.sets?.length || 0), 0);
+        if (totalSets === 0) {
+          showToast(i18n.getLang() === 'tr' ? '⚠️ En az 1 set ekle!' : '⚠️ Add at least 1 set!', 'warning');
+          return;
+        }
+      }
+
       const workout = store.finishWorkout();
       if (workout) {
-        const xp = calculateWorkoutXP(workout);
+        // Bug #6: Apply streak multiplier
+        const streak = store.get('streak');
+        const multiplier = getStreakMultiplier(streak.current);
+        const baseXP = calculateWorkoutXP(workout);
+        const xp = Math.round(baseXP * multiplier);
         const xpResult = store.addXP(xp);
         const newBadges = checkAndAwardBadges();
 
@@ -225,7 +440,8 @@ export function initWorkout(navigateTo) {
         showToast(`${t('workoutCongrats')}`, 'success', 4000);
 
         setTimeout(() => {
-          showToast(`+${xp} XP ${t('xpEarned')}`, 'xp', 3000);
+          const bonusText = multiplier > 1 ? ` (x${multiplier} 🔥)` : '';
+          showToast(`+${xp} XP ${t('xpEarned')}${bonusText}`, 'xp', 3000);
         }, 1000);
 
         newBadges.forEach((badge, i) => {
@@ -235,6 +451,10 @@ export function initWorkout(navigateTo) {
         });
 
         clearRestTimer();
+        if (workoutTimerInterval) {
+          clearInterval(workoutTimerInterval);
+          workoutTimerInterval = null;
+        }
         navigateTo('dashboard');
       }
     });
@@ -262,7 +482,8 @@ export function initWorkout(navigateTo) {
   if (timer) {
     const workout = store.getActiveWorkout();
     if (workout) {
-      setInterval(() => {
+      if (workoutTimerInterval) clearInterval(workoutTimerInterval);
+      workoutTimerInterval = setInterval(() => {
         const elapsed = Date.now() - workout.startTime;
         const m = Math.floor(elapsed / 60000);
         const s = Math.floor((elapsed % 60000) / 1000);
@@ -316,7 +537,10 @@ function showExercisePicker() {
     modal.querySelectorAll('.cat-tab').forEach(tab => {
       tab.addEventListener('click', () => {
         selectedCategory = tab.dataset.cat;
-        modal.querySelector('.exercise-picker').outerHTML = renderPicker(selectedCategory);
+        const pickerContainer = modal.querySelector('.exercise-picker');
+        if (pickerContainer && pickerContainer.parentNode) {
+          pickerContainer.parentNode.innerHTML = renderPicker(selectedCategory);
+        }
         setupCatTabs();
         setupExPicks();
       });

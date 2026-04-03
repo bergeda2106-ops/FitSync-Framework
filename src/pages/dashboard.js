@@ -1,7 +1,7 @@
 import { t, i18n } from '../i18n/index.js';
 import { store, getSimulatedFeed } from '../store.js';
 import { getLevelTitle, formatXP } from '../utils/xp.js';
-import { getCurrentLeague, formatTimeAgo, getActiveChallenge } from '../utils/gamification.js';
+import { getCurrentLeague, formatTimeAgo, getActiveChallenge, getChallengeProgress } from '../utils/gamification.js';
 
 export function renderDashboard() {
   const user = store.getUser();
@@ -12,6 +12,8 @@ export function renderDashboard() {
   const lang = i18n.getLang();
   const feed = getSimulatedFeed();
   const challenge = getActiveChallenge();
+  const challengeProgress = getChallengeProgress();
+  const activeWorkout = store.getActiveWorkout();
 
   // Greeting based on time
   const hour = new Date().getHours();
@@ -33,6 +35,27 @@ export function renderDashboard() {
   startOfWeek.setHours(0, 0, 0, 0);
   const weekWorkouts = workouts.filter(w => w.startTime >= startOfWeek.getTime());
 
+  // Weekly summary
+  const weekId = store.getWeekId();
+  const dismissedWeekId = store.getWeeklySummaryDismissed();
+  const showWeeklySummary = dismissedWeekId !== weekId && workouts.length > 0;
+  const lastWeekStats = store.getLastWeekStats();
+
+  let summaryMsg;
+  if (lastWeekStats.workoutCount >= 5) summaryMsg = t('weeklySummaryGreat');
+  else if (lastWeekStats.workoutCount >= 2) summaryMsg = t('weeklySummaryGood');
+  else summaryMsg = t('weeklySummaryStart');
+
+  // Challenge progress text
+  let progressText = '';
+  if (challenge.type === 'volume') {
+    const currentFormatted = challengeProgress.current >= 1000 ? `${(challengeProgress.current / 1000).toFixed(1)}k` : challengeProgress.current;
+    const targetFormatted = challenge.target >= 1000 ? `${(challenge.target / 1000).toFixed(0)}k` : challenge.target;
+    progressText = `${currentFormatted} / ${targetFormatted} kg`;
+  } else {
+    progressText = `${challengeProgress.current} / ${challengeProgress.target}`;
+  }
+
   return `
     <div class="page page-dashboard" id="pageDashboard">
       <!-- Header -->
@@ -47,6 +70,48 @@ export function renderDashboard() {
           </div>
         </div>
       </header>
+
+      <!-- Active Workout Banner -->
+      ${activeWorkout ? `
+        <div class="active-workout-banner glass-card" id="activeWorkoutBanner">
+          <div class="awb-left">
+            <span class="awb-pulse"></span>
+            <div class="awb-info">
+              <span class="awb-title">${lang === 'tr' ? '🏋️ Aktif Antrenman' : '🏋️ Active Workout'}</span>
+              <span class="awb-detail">${activeWorkout.exercises.length} ${lang === 'tr' ? 'egzersiz' : 'exercises'}</span>
+            </div>
+          </div>
+          <button class="awb-continue-btn" id="continueWorkoutBtn">
+            ${lang === 'tr' ? 'Devam Et →' : 'Continue →'}
+          </button>
+        </div>
+      ` : ''}
+
+      <!-- Weekly Summary Card -->
+      ${showWeeklySummary ? `
+        <div class="weekly-summary-card glass-card" id="weeklySummaryCard">
+          <div class="weekly-summary-header">
+            <span class="weekly-summary-icon">📊</span>
+            <h3>${t('weeklySummaryTitle')}</h3>
+            <button class="weekly-summary-dismiss" id="dismissWeeklySummary">✕</button>
+          </div>
+          <div class="weekly-summary-stats">
+            <div class="ws-stat">
+              <span class="ws-stat-value">${lastWeekStats.workoutCount}</span>
+              <span class="ws-stat-label">${t('weeklySummaryWorkouts')}</span>
+            </div>
+            <div class="ws-stat">
+              <span class="ws-stat-value">${lastWeekStats.totalVolume >= 1000 ? (lastWeekStats.totalVolume / 1000).toFixed(1) + 'k' : lastWeekStats.totalVolume}kg</span>
+              <span class="ws-stat-label">${t('weeklySummaryVolume')}</span>
+            </div>
+            <div class="ws-stat">
+              <span class="ws-stat-value">${lastWeekStats.totalSets}</span>
+              <span class="ws-stat-label">${t('weeklySummarySets')}</span>
+            </div>
+          </div>
+          <p class="weekly-summary-msg">${summaryMsg}</p>
+        </div>
+      ` : ''}
 
       <!-- Streak & XP Bar -->
       <div class="dash-stats-row">
@@ -106,14 +171,27 @@ export function renderDashboard() {
         </div>
       </div>
 
-      <!-- Challenge -->
-      <div class="challenge-card glass-card">
+      <!-- Challenge with Progress Bar -->
+      <div class="challenge-card glass-card ${challengeProgress.completed ? 'challenge-complete' : ''}">
         <div class="challenge-header">
           <span class="challenge-icon">${challenge.icon}</span>
           <h3>${t('challengeTitle')}</h3>
+          ${challengeProgress.completed ? '<span class="challenge-done-badge">✅</span>' : ''}
           <span class="challenge-badge">${t('challengeWeekly')}</span>
         </div>
         <p class="challenge-text">${lang === 'tr' ? challenge.titleTR : challenge.titleEN}</p>
+        
+        <!-- Challenge Progress Bar -->
+        <div class="challenge-progress">
+          <div class="challenge-progress-bar">
+            <div class="challenge-progress-fill ${challengeProgress.completed ? 'complete' : ''}" style="width: ${challengeProgress.progress * 100}%"></div>
+          </div>
+          <div class="challenge-progress-info">
+            <span class="challenge-progress-text">${progressText}</span>
+            <span class="challenge-progress-pct">${Math.round(challengeProgress.progress * 100)}%</span>
+          </div>
+        </div>
+
         <div class="challenge-reward">
           <span>🎁 +${challenge.xpReward} XP</span>
         </div>
@@ -161,6 +239,25 @@ export function initDashboard(navigateTo) {
   const gymRealBtn = document.getElementById('dashGymReal');
   if (gymRealBtn) {
     gymRealBtn.addEventListener('click', () => navigateTo('gymreal'));
+  }
+
+  // Continue workout banner
+  const continueBtn = document.getElementById('continueWorkoutBtn');
+  if (continueBtn) {
+    continueBtn.addEventListener('click', () => navigateTo('workout'));
+  }
+
+  // Dismiss weekly summary
+  const dismissBtn = document.getElementById('dismissWeeklySummary');
+  if (dismissBtn) {
+    dismissBtn.addEventListener('click', () => {
+      store.dismissWeeklySummary();
+      const card = document.getElementById('weeklySummaryCard');
+      if (card) {
+        card.style.animation = 'slideDown 0.3s ease reverse forwards';
+        setTimeout(() => card.remove(), 300);
+      }
+    });
   }
 
   // Feed like buttons

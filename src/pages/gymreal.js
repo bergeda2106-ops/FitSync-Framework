@@ -124,6 +124,12 @@ export function renderGymReal() {
 }
 
 export function initGymReal(navigateTo) {
+  // Clean up any leftover intervals from previous renders
+  if (countdownInterval) {
+    clearInterval(countdownInterval);
+    countdownInterval = null;
+  }
+
   const captureBtn = document.getElementById('gymRealCaptureBtn');
   if (captureBtn) {
     captureBtn.addEventListener('click', () => {
