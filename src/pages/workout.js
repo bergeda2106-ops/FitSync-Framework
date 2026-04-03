@@ -258,7 +258,7 @@ export function initWorkout(navigateTo) {
   if (startBtn) {
     startBtn.addEventListener('click', () => {
       store.startWorkout();
-      navigateTo('workout');
+      navigateTo('workout'); // instant — router handles immediately
     });
   }
 
@@ -375,7 +375,7 @@ export function initWorkout(navigateTo) {
           showToast(`${t('workoutPR')} ${weight}kg`, 'pr', 4000);
         }
 
-        // Actually add XP per set (Bug #2 fix)
+        // Add XP per set
         store.addXP(5);
 
         // Start rest timer with user preference
@@ -385,7 +385,8 @@ export function initWorkout(navigateTo) {
         // XP toast
         showToast('+5 XP', 'xp', 1500);
 
-        navigateTo('workout');
+        // Use rerender instead of navigateTo to avoid full page flash
+        window.dispatchEvent(new CustomEvent('rerender'));
       }
     });
   });
@@ -410,11 +411,10 @@ export function initWorkout(navigateTo) {
     });
   });
 
-  // Finish workout
   const finishBtn = document.getElementById('finishWorkoutBtn');
   if (finishBtn) {
     finishBtn.addEventListener('click', () => {
-      // Bug #3: Prevent finishing empty workout
+      // Prevent finishing empty workout
       const currentWorkout = store.getActiveWorkout();
       if (currentWorkout) {
         const totalSets = (currentWorkout.exercises || []).reduce((sum, ex) => sum + (ex.sets?.length || 0), 0);
@@ -424,37 +424,44 @@ export function initWorkout(navigateTo) {
         }
       }
 
+      // Disable button immediately to prevent double tap
+      finishBtn.disabled = true;
+      finishBtn.textContent = '⏳';
+
       const workout = store.finishWorkout();
       if (workout) {
-        // Bug #6: Apply streak multiplier
+        // Calculate XP with streak multiplier
         const streak = store.get('streak');
         const multiplier = getStreakMultiplier(streak.current);
         const baseXP = calculateWorkoutXP(workout);
         const xp = Math.round(baseXP * multiplier);
-        const xpResult = store.addXP(xp);
+        store.addXP(xp);
         const newBadges = checkAndAwardBadges();
 
-        launchConfetti();
-        showToast(`${t('workoutCongrats')}`, 'success', 4000);
-
-        setTimeout(() => {
-          const bonusText = multiplier > 1 ? ` (x${multiplier} 🔥)` : '';
-          showToast(`+${xp} XP ${t('xpEarned')}${bonusText}`, 'xp', 3000);
-        }, 1000);
-
-        newBadges.forEach((badge, i) => {
-          setTimeout(() => {
-            showToast(`${badge.icon} ${t(badge.nameKey)}!`, 'badge', 4000);
-          }, 2000 + i * 1000);
-        });
-
+        // Clear timers
         clearRestTimer();
         if (workoutTimerInterval) {
           clearInterval(workoutTimerInterval);
           workoutTimerInterval = null;
         }
-        timerStartTime = null; // Reset so next workout gets fresh timer
+        timerStartTime = null;
+
+        // Navigate IMMEDIATELY to dashboard
         navigateTo('dashboard');
+
+        // Show celebration toasts after navigation
+        launchConfetti();
+        setTimeout(() => showToast(`🏁 ${t('workoutCongrats')}`, 'success', 3000), 100);
+        setTimeout(() => {
+          const bonusText = multiplier > 1 ? ` (x${multiplier} 🔥)` : '';
+          showToast(`+${xp} XP ${t('xpEarned')}${bonusText}`, 'xp', 3000);
+        }, 900);
+
+        newBadges.forEach((badge, i) => {
+          setTimeout(() => {
+            showToast(`${badge.icon} ${t(badge.nameKey)}!`, 'badge', 4000);
+          }, 1800 + i * 800);
+        });
       }
     });
   }
