@@ -9,6 +9,7 @@ import { checkAndAwardBadges } from '../utils/gamification.js';
 
 let restTimerInterval = null;
 let workoutTimerInterval = null;
+let timerStartTime = null; // Track the current workout's startTime
 
 // Preset workout templates
 const presetTemplates = [
@@ -137,16 +138,13 @@ export function renderWorkout() {
 }
 
 function renderActiveWorkout(workout, lang) {
-  const elapsed = Date.now() - workout.startTime;
-  const minutes = Math.floor(elapsed / 60000);
-  const seconds = Math.floor((elapsed % 60000) / 1000);
   const restPrefs = store.getRestTimerPrefs();
 
   return `
     <div class="page page-workout active-workout" id="pageWorkout">
       <header class="page-header workout-active-header">
         <h1>${t('workoutActive')}</h1>
-        <div class="workout-timer" id="workoutTimer">${minutes}:${String(seconds).padStart(2, '0')}</div>
+        <div class="workout-timer" id="workoutTimer">0:00</div>
       </header>
 
       <!-- Exercise List -->
@@ -455,6 +453,7 @@ export function initWorkout(navigateTo) {
           clearInterval(workoutTimerInterval);
           workoutTimerInterval = null;
         }
+        timerStartTime = null; // Reset so next workout gets fresh timer
         navigateTo('dashboard');
       }
     });
@@ -477,18 +476,32 @@ export function initWorkout(navigateTo) {
     });
   });
 
-  // Workout timer update
-  const timer = document.getElementById('workoutTimer');
-  if (timer) {
+  // Workout timer — start only once per workout session, survive re-renders
+  const timerEl = document.getElementById('workoutTimer');
+  if (timerEl) {
     const workout = store.getActiveWorkout();
     if (workout) {
-      if (workoutTimerInterval) clearInterval(workoutTimerInterval);
-      workoutTimerInterval = setInterval(() => {
-        const elapsed = Date.now() - workout.startTime;
+      const workoutStart = workout.startTime;
+
+      // Update display immediately (no 1-second wait)
+      const updateTimer = () => {
+        const el = document.getElementById('workoutTimer');
+        if (!el) return;
+        const elapsed = Date.now() - workoutStart;
         const m = Math.floor(elapsed / 60000);
         const s = Math.floor((elapsed % 60000) / 1000);
-        timer.textContent = `${m}:${String(s).padStart(2, '0')}`;
-      }, 1000);
+        el.textContent = `${m}:${String(s).padStart(2, '0')}`;
+      };
+
+      // Only restart if this is a different workout
+      if (timerStartTime !== workoutStart) {
+        timerStartTime = workoutStart;
+        if (workoutTimerInterval) clearInterval(workoutTimerInterval);
+        workoutTimerInterval = setInterval(updateTimer, 1000);
+      }
+
+      // Always update display right now (instant tick)
+      updateTimer();
     }
   }
 
