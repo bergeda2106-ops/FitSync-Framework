@@ -266,7 +266,7 @@ export function initWorkout(navigateTo) {
   if (startBtn) {
     startBtn.addEventListener('click', () => {
       store.startWorkout();
-      navigateTo('workout'); // instant — router handles immediately
+      window.dispatchEvent(new CustomEvent('rerender')); // instant — router handles immediately
     });
   }
 
@@ -279,7 +279,7 @@ export function initWorkout(navigateTo) {
         store.startWorkout();
         preset.exercises.forEach(exId => store.addExerciseToWorkout(exId));
         showToast(`📋 ${t('templateLoaded')}`, 'success');
-        navigateTo('workout');
+        window.dispatchEvent(new CustomEvent('rerender'));
       }
     });
   });
@@ -295,7 +295,7 @@ export function initWorkout(navigateTo) {
         store.startWorkout();
         tpl.exercises.forEach(exId => store.addExerciseToWorkout(exId));
         showToast(`📋 ${t('templateLoaded')}`, 'success');
-        navigateTo('workout');
+        window.dispatchEvent(new CustomEvent('rerender'));
       }
     });
   });
@@ -307,7 +307,7 @@ export function initWorkout(navigateTo) {
       const tplId = btn.dataset.deleteTemplate;
       store.deleteWorkoutTemplate(tplId);
       showToast(`🗑️ ${t('templateDelete')}`, 'info');
-      navigateTo('workout');
+      window.dispatchEvent(new CustomEvent('rerender'));
     });
   });
 
@@ -426,7 +426,7 @@ export function initWorkout(navigateTo) {
       const exIndex = parseInt(btn.dataset.ex);
       const setIndex = parseInt(btn.dataset.set);
       store.removeSetFromExercise(exIndex, setIndex);
-      navigateTo('workout');
+      window.dispatchEvent(new CustomEvent('rerender'));
     });
   });
 
@@ -436,7 +436,7 @@ export function initWorkout(navigateTo) {
       const exIndex = parseInt(btn.dataset.removeExercise);
       store.removeExerciseFromWorkout(exIndex);
       showToast('🗑️', 'info', 1000);
-      navigateTo('workout');
+      window.dispatchEvent(new CustomEvent('rerender'));
     });
   });
 
@@ -478,7 +478,7 @@ export function initWorkout(navigateTo) {
           store.addExerciseToWorkout(ex.exerciseId);
         });
         showToast(`📋 ${t('workoutClone')}`, 'success');
-        navigateTo('workout');
+        window.dispatchEvent(new CustomEvent('rerender'));
       }
     });
   });

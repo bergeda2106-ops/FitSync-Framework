@@ -31,6 +31,8 @@ class App {
     window.addEventListener('langchange', () => this.render());
     // Listen for re-render requests
     window.addEventListener('rerender', () => this.render());
+    // Listen for backend/sync errors
+    window.addEventListener('fitsync_error', (e) => showToast(e.detail, 'warning'));
   }
 
   setupRouter() {
