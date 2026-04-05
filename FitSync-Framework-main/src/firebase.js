@@ -1,5 +1,21 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-import { getFirestore, doc, setDoc, getDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+import {
+  getFirestore,
+  doc,
+  setDoc,
+  getDoc,
+  onSnapshot,
+  collection,
+  addDoc,
+  query,
+  orderBy,
+  serverTimestamp,
+  updateDoc,
+  arrayUnion,
+  arrayRemove,
+  deleteDoc,
+  getDocs,
+} from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyCpdefg_swRO9ui-ltlCNCaZeZA1L4b8EQ",
@@ -21,4 +37,20 @@ try {
   console.error("Firebase initialization error:", e);
 }
 
-export { db, doc, setDoc, getDoc, onSnapshot };
+export {
+  db,
+  doc,
+  setDoc,
+  getDoc,
+  onSnapshot,
+  collection,
+  addDoc,
+  query,
+  orderBy,
+  serverTimestamp,
+  updateDoc,
+  arrayUnion,
+  arrayRemove,
+  deleteDoc,
+  getDocs,
+};
