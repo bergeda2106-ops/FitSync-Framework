@@ -1,14 +1,3 @@
-const toastContainer = (() => {
-  let container = document.getElementById('toastContainer');
-  if (!container) {
-    container = document.createElement('div');
-    container.id = 'toastContainer';
-    container.className = 'toast-container';
-    document.body.appendChild(container);
-  }
-  return container;
-})();
-
 export function showToast(message, type = 'info', duration = 3000) {
   const container = document.getElementById('toastContainer') || (() => {
     const c = document.createElement('div');

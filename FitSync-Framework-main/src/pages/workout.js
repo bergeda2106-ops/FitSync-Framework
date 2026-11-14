@@ -1,6 +1,6 @@
 import { t, i18n } from '../i18n/index.js';
 import { store } from '../store.js';
-import { exercises, categories, getExercisesByCategory, getExerciseById } from '../data/exercises.js';
+import { categories, getExercisesByCategory, getExerciseById } from '../data/exercises.js';
 import { showModal, closeModal } from '../components/modal.js';
 import { showToast } from '../components/toast.js';
 import { launchConfetti } from '../components/confetti.js';
@@ -532,7 +532,7 @@ export function initWorkout(navigateTo) {
       // Get last entered weight for this exercise as target
       const lastSet = ex.sets.length > 0 ? ex.sets[ex.sets.length - 1] : null;
       const targetWeight = lastSet?.weight || 0;
-      showWarmupModal(exerciseIndex=exIndex, targetWeight);
+      showWarmupModal(exIndex, targetWeight);
     });
   });
 }
@@ -632,7 +632,6 @@ function clearRestTimer() {
 
 // 🧠 RPE Modal — shown before finishing workout
 function showRpeModal(onComplete) {
-  const lang = i18n.getLang();
   let selectedRPE = 5;
 
   showModal({

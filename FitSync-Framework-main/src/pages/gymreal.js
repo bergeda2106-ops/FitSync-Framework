@@ -18,7 +18,6 @@ import {
 // ─── Module-level state ───────────────────────────────────────────────────────
 let countdownInterval = null;
 let countdownSeconds  = 120;
-let gymRealActive     = false;
 
 // Voice note state
 let mediaRecorder       = null;
@@ -278,7 +277,7 @@ export function initGymReal(navigateTo) {
   initVoiceRecorder();
 
   // Subscribe to real Firestore posts
-  subscribeToFirestorePosts(navigateTo);
+  subscribeToFirestorePosts();
 }
 
 // ─── Countdown ────────────────────────────────────────────────────────────────
@@ -288,8 +287,6 @@ function startGymRealCountdown() {
 
   el.style.display = 'block';
   countdownSeconds  = 120;
-  gymRealActive     = true;
-
   tryAccessCamera();
   updateCountdownDisplay();
 
@@ -298,7 +295,6 @@ function startGymRealCountdown() {
     updateCountdownDisplay();
     if (countdownSeconds <= 0) {
       clearInterval(countdownInterval);
-      gymRealActive = false;
       showToast('⏰ ' + t('gymRealLate'), 'warning');
     }
   }, 1000);
@@ -568,7 +564,7 @@ async function publishGymRealPost(postData) {
 }
 
 // ─── Real-time listener for Firestore posts ───────────────────────────────────
-function subscribeToFirestorePosts(navigateTo) {
+function subscribeToFirestorePosts() {
   if (!db) return;
   try {
     const q = query(collection(db, 'gymreal_posts'), orderBy('timestamp', 'desc'));

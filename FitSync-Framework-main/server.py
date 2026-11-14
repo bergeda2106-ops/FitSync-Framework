@@ -42,14 +42,19 @@ def proxy_gemini():
     if not GEMINI_API_KEY:
         return jsonify({"error": {"message": "Server configuration error: Missing API Key"}}), 500
 
-    data = request.json
-    if not data or 'contents' not in data:
+    data = request.get_json(silent=True)
+    if not isinstance(data, dict) or 'contents' not in data:
         return jsonify({"error": {"message": "Invalid request payload"}}), 400
 
     url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={GEMINI_API_KEY}"
     
     try:
-        response = requests.post(url, json=data, headers={'Content-Type': 'application/json'})
+        response = requests.post(
+            url,
+            json=data,
+            headers={'Content-Type': 'application/json'},
+            timeout=(5, 30),
+        )
         response.raise_for_status()
         return jsonify(response.json())
     except requests.exceptions.RequestException as e:
