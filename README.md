@@ -75,6 +75,10 @@ Render servis URL'leri örneklerden farklıysa gerçek URL'leri kullan. Frontend
 
 Vanilla JavaScript (ES modules), Vite, Flask ve Firebase Firestore.
 
+## Lisans
+
+FitSync, [PolyForm Noncommercial License 1.0.0](LICENSE) ile lisanslanır. Ticari olmayan kişisel, araştırma ve eğitim kullanımına izin verilir; ticari kullanım için ayrıca hak sahibinden izin alınmalıdır. Bu lisans OSI onaylı bir açık kaynak lisansı değildir. Bu açıklama hukuki danışmanlık yerine geçmez.
+
 ## Katkıda bulunma
 
 Hata bildirimleri ve iyileştirme önerileri için [Issues](https://github.com/bergeda2106-ops/FitSync-Framework/issues) açabilirsin. Değişiklik göndermeden önce ilgili testleri çalıştır.
