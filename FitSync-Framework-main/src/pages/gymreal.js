@@ -52,7 +52,6 @@ export function renderGymReal() {
   const hasTodayPost  = store.hasTodayGymReal();
   const simulatedPosts = getSimulatedGymRealPosts();
   const myPosts       = store.getGymRealPosts();
-  const isCheckedIn   = store.isCheckedIn();
 
   /* Seed in-memory reactions for simulated posts on first render */
   simulatedPosts.forEach(p => {
@@ -116,7 +115,7 @@ export function renderGymReal() {
             <span class="voice-note-icon">🎙️</span>
             <div>
               <p class="voice-note-title">${lang === 'tr' ? 'Sesli Not Ekle' : 'Add a Voice Note'}</p>
-              <p class="voice-note-sub">${lang === 'tr' ? 'Maks. 5 saniye · Sadece bugün check-in yapanlar görebilir' : 'Max 5 sec · Only visible to checked-in members'}</p>
+              <p class="voice-note-sub">${lang === 'tr' ? 'Maks. 5 saniye' : 'Max 5 sec'}</p>
             </div>
           </div>
           <div class="voice-controls">
@@ -145,7 +144,7 @@ export function renderGymReal() {
       <!-- My GymReal Posts -->
       ${myPosts.length > 0 ? `
         <div class="my-gymreal-section">
-          <h2 class="section-title">📸 My GymReal</h2>
+          <h2 class="section-title">📸 ${lang === 'tr' ? 'Paylaşımlarım' : 'My Posts'}</h2>
           ${myPosts.slice(0, 3).map(post => `
             <div class="gymreal-post glass-card my-post">
               <div class="post-badge ${post.onTime ? 'on-time' : 'late'}">${post.onTime ? t('gymRealOnTime') : t('gymRealLate')}</div>
@@ -167,19 +166,18 @@ export function renderGymReal() {
       <!-- GymReal Feed (simulated) -->
       <div class="gymreal-feed">
         <h2 class="section-title">${t('gymRealFeed')}</h2>
-        ${simulatedPosts.map(post => renderPostCard(post, hasTodayPost, isCheckedIn, lang)).join('')}
+        ${simulatedPosts.map(post => renderPostCard(post, lang)).join('')}
       </div>
     </div>
   `;
 }
 
 // ─── Render a single post card ────────────────────────────────────────────────
-function renderPostCard(post, hasTodayPost, isCheckedIn, lang) {
+function renderPostCard(post, lang) {
   const r = reactionsState[post.id] || {};
 
   return `
-    <div class="gymreal-post glass-card ${!hasTodayPost ? 'blurred' : ''}" data-post-id="${post.id}">
-      ${!hasTodayPost ? `<div class="blur-overlay"><p>🔒 ${t('gymRealBlurred')}</p></div>` : ''}
+    <div class="gymreal-post glass-card" data-post-id="${post.id}">
       <div class="post-header">
         <span class="post-avatar">${post.user?.avatar || post.userAvatar || '🏋️'}</span>
         <div class="post-user-info">
@@ -200,17 +198,13 @@ function renderPostCard(post, hasTodayPost, isCheckedIn, lang) {
         </div>
       </div>
 
-      <!-- Voice Note Playback (checked-in gate) -->
+      <!-- Voice Note Playback -->
       ${post.voiceNoteURL
-        ? isCheckedIn
-          ? `<div class="voice-playback glass-card">
-               <span class="voice-playback-icon">🎙️</span>
-               <audio src="${post.voiceNoteURL}" controls class="voice-audio-playback"></audio>
-               <span class="voice-playback-label">${lang === 'tr' ? `${post.voiceNoteDuration || ''}s ses notu` : `${post.voiceNoteDuration || ''}s voice note`}</span>
-             </div>`
-          : `<div class="voice-gate-msg">
-               🔒 ${lang === 'tr' ? 'Ses notu sadece bugün check-in yapan üyeler için' : 'Voice note only for today\'s checked-in members'}
-             </div>`
+        ? `<div class="voice-playback glass-card">
+             <span class="voice-playback-icon">🎙️</span>
+             <audio src="${post.voiceNoteURL}" controls class="voice-audio-playback"></audio>
+             <span class="voice-playback-label">${lang === 'tr' ? `${post.voiceNoteDuration || ''}s ses notu` : `${post.voiceNoteDuration || ''}s voice note`}</span>
+           </div>`
         : ''
       }
 
@@ -524,17 +518,15 @@ async function finishGymReal(navigateTo) {
   }
 
   const user    = store.getUser();
-  const gymName = store.getSelectedGym()?.name || '';
 
   // Write to local store
-  store.addGymRealPost({ onTime, exercise: exerciseTag, gym: gymName });
+  store.addGymRealPost({ onTime, exercise: exerciseTag });
   store.addXP(xpAmount);
 
   // Publish to Firestore
   publishGymRealPost({
     onTime,
     exercise:      exerciseTag,
-    gym:           gymName,
     voiceNoteURL:  voiceDataURL || null,
     voiceNoteDuration: voiceDuration || null,
     userId:        store.deviceId,
@@ -584,8 +576,6 @@ function renderFirestoreFeed() {
   if (!container || firestorePosts.length === 0) return;
 
   const lang        = i18n.getLang();
-  const isCheckedIn = store.isCheckedIn();
-  const hasTodayPost = store.hasTodayGymReal();
 
   container.innerHTML = `
     <div class="gymreal-feed" style="margin-bottom:0;">
@@ -601,7 +591,7 @@ function renderFirestoreFeed() {
             '👏': { count: 0, reactedByMe: false },
           };
         }
-        return renderPostCard(post, hasTodayPost, isCheckedIn, lang);
+        return renderPostCard(post, lang);
       }).join('')}
     </div>
   `;

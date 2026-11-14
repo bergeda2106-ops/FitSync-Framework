@@ -15,7 +15,7 @@ FitSync; antrenmanlarını planlamana, ilerlemeni takip etmene ve hedeflerini oy
 - Antrenman şablonları, set/tekrar/ağırlık kaydı ve dinlenme zamanlayıcısı
 - Kişisel rekorlar, kilo takibi, haftalık özet ve ilerleme grafikleri
 - XP, seviyeler, rozetler, seriler ve haftalık meydan okumalar
-- GymReal check-in ve topluluk akışı
+- Antrenman paylaşımları, topluluk akışı ve etkileşimler
 - Gemini destekli AI koç ve farklı koç kişilikleri
 
 Uygulama kaynakları [`FitSync-Framework-main/`](FitSync-Framework-main/) klasöründedir. Topluluk akışındaki bazı içerikler demo amaçlı simüle edilir.

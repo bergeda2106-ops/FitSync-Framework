@@ -20,7 +20,6 @@ const defaultData = {
   badges: [],
   pinnedBadges: [],
   gymReal: { posts: [], todayPosted: false, streak: 0 },
-  gym: { selectedGym: null, checkedIn: false, checkInTime: null },
   friends: [],
   personalRecords: {},
   settings: { lang: 'tr', notifications: true },
@@ -36,11 +35,7 @@ const defaultData = {
 import {
   simulatedFriends,
   generateSimulatedFeed,
-  simulatedGymMembers,
-  simulatedGyms,
   generateSimulatedGymRealPosts,
-  generateLeaderboard as _generateLeaderboard,
-  simulatedBuddyRequests,
 } from './data/simulatedData.js';
 
 /** Firestore Timestamp | number | undefined → epoch ms */
@@ -475,26 +470,6 @@ class Store {
     this.set('gymReal', gymReal);
   }
 
-  // Gym
-  getSelectedGym() {
-    return this.data.gym?.selectedGym;
-  }
-  isCheckedIn() {
-    return this.data.gym?.checkedIn || false;
-  }
-
-  selectGym(gym) {
-    this.update('gym', (g) => ({ ...g, selectedGym: gym }));
-  }
-
-  checkIn() {
-    this.update('gym', (g) => ({ ...g, checkedIn: true, checkInTime: Date.now() }));
-  }
-
-  checkOut() {
-    this.update('gym', (g) => ({ ...g, checkedIn: false, checkInTime: null }));
-  }
-
   // Weight Log
   getWeightLog() {
     return this.data.weightLog || [];
@@ -653,25 +628,8 @@ class Store {
   }
 }
 
-function getWorkoutsThisWeek() {
-  const data = store.data;
-  const now = new Date();
-  const startOfWeek = new Date(now);
-  startOfWeek.setDate(now.getDate() - now.getDay());
-  startOfWeek.setHours(0, 0, 0, 0);
-  return (data.workouts || []).filter((w) => w.startTime >= startOfWeek.getTime());
-}
-
 export const store = new Store();
 
 export const getSimulatedFriends = () => simulatedFriends;
 export const getSimulatedFeed = () => generateSimulatedFeed();
-export const getSimulatedGymMembers = () => simulatedGymMembers;
-export const getSimulatedGyms = () => simulatedGyms;
 export const getSimulatedGymRealPosts = () => generateSimulatedGymRealPosts();
-export const getSimulatedBuddyRequests = () => simulatedBuddyRequests;
-export const getLeaderboard = (userId, userName) => {
-  const data = store.data;
-  const workoutsCount = getWorkoutsThisWeek().length;
-  return _generateLeaderboard(userId, userName, data.xp.total, data.xp.level, workoutsCount);
-};
