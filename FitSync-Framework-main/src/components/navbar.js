@@ -4,9 +4,8 @@ export function renderNavbar(activePage) {
   const tabs = [
     { id: 'dashboard', icon: '🏠', labelKey: 'navDashboard' },
     { id: 'workout', icon: '💪', labelKey: 'navWorkout' },
-    { id: 'gymreal', icon: '📸', labelKey: 'navGymReal' },
+    { id: 'gymreal', icon: '📸', labelKey: 'navCommunity' },
     { id: 'aicoach', icon: '🤖', labelKey: 'navAICoach' },
-    { id: 'gym', icon: '🏢', labelKey: 'navGym' },
     { id: 'profile', icon: '👤', labelKey: 'navProfile' },
   ];
 

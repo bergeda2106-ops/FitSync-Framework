@@ -5,7 +5,6 @@ import { renderNavbar, initNavbar } from './components/navbar.js';
 import { renderDashboard, initDashboard } from './pages/dashboard.js';
 import { renderWorkout, initWorkout } from './pages/workout.js';
 import { renderGymReal, initGymReal } from './pages/gymreal.js';
-import { renderGym, initGym } from './pages/gym.js';
 import { renderProfile, initProfile } from './pages/profile.js';
 import { renderAICoach, initAICoach } from './pages/aicoach.js';
 import { showToast } from './components/toast.js';
@@ -65,9 +64,6 @@ class App {
       case 'gymreal':
         pageContent = renderGymReal();
         break;
-      case 'gym':
-        pageContent = renderGym();
-        break;
       case 'profile':
         pageContent = renderProfile();
         break;
@@ -75,6 +71,8 @@ class App {
         pageContent = renderAICoach();
         break;
       default:
+        this.currentPage = 'dashboard';
+        router.navigate('dashboard');
         pageContent = renderDashboard();
     }
 
@@ -99,9 +97,6 @@ class App {
         break;
       case 'gymreal':
         initGymReal((page) => this.navigateTo(page));
-        break;
-      case 'gym':
-        initGym((page) => this.navigateTo(page));
         break;
       case 'profile':
         initProfile((page) => this.navigateTo(page));

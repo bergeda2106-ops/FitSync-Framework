@@ -28,7 +28,8 @@ const PERSONALITIES = {
 
 export async function askAiCoach(message, userContext = "", personality = "kanka") {
   try {
-    const url = `http://localhost:5000/api/ai`;
+    const apiBaseUrl = (import.meta.env.VITE_API_BASE_URL || "http://localhost:5000").replace(/\/+$/, "");
+    const url = `${apiBaseUrl}/api/ai`;
     const lang = userContext.includes('Boy:') ? 'tr' : 'en';
     const persona = PERSONALITIES[personality] || PERSONALITIES.kanka;
     const systemPrompt = lang === 'tr' ? persona.promptTR : persona.promptEN;

@@ -6,6 +6,12 @@ import requests
 import server
 
 
+def test_health_check(client):
+    res = client.get("/api/health")
+    assert res.status_code == 200
+    assert res.get_json() == {"status": "ok"}
+
+
 class TestApiAiInvalidPayload:
     @pytest.mark.parametrize(
         "payload",
@@ -27,6 +33,15 @@ class TestApiAiInvalidPayload:
             content_type="application/json",
         )
         assert res.status_code == 400
+
+    def test_malformed_json_body_returns_400(self, client):
+        res = client.post(
+            "/api/ai",
+            data="{invalid json",
+            content_type="application/json",
+        )
+        assert res.status_code == 400
+        assert res.get_json()["error"]["message"] == "Invalid request payload"
 
 
 class TestApiAiMissingApiKey:
@@ -55,6 +70,7 @@ class TestApiAiGeminiErrors:
         mock_post.assert_called_once()
         call_kw = mock_post.call_args[1]
         assert call_kw["json"] == payload
+        assert call_kw["timeout"] == (5, 30)
         assert "generativelanguage.googleapis.com" in mock_post.call_args[0][0]
 
     @patch("server.requests.post")

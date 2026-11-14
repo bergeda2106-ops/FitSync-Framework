@@ -363,7 +363,6 @@ export function initProfile(navigateTo) {
 
 function openWeightModal(navigateTo) {
   const user = store.getUser() || {};
-  const lang = i18n.getLang();
   const currentWeight = user.weight || '';
 
   showModal({
@@ -445,7 +444,6 @@ function openSettings(navigateTo) {
 
 function openEditProfile(navigateTo) {
   const user = store.getUser() || {};
-  const lang = i18n.getLang();
   showModal({
     title: '✏️ ' + t('profileEdit'),
     content: `

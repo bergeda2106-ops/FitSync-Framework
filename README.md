@@ -1,237 +1,86 @@
-# 🏋️ FitSync — Your Fitness Community
+# FitSync
 
-<div align="center">
-
-![FitSync Banner](https://img.shields.io/badge/FitSync-Fitness%20App-orange?style=for-the-badge&logo=firebase)
-![Version](https://img.shields.io/badge/version-2.0.0-blue?style=for-the-badge)
-![JavaScript](https://img.shields.io/badge/JavaScript-ES6%20Modules-yellow?style=for-the-badge&logo=javascript)
-![Firebase](https://img.shields.io/badge/Firebase-Firestore-orange?style=for-the-badge&logo=firebase)
+<p align="center">
+  <img src="FitSync-Framework-main/public/icons/icon.svg" alt="FitSync icon" width="96">
+</p>
 
 **Sadece spor değil, bir topluluk.**
 
-[🚀 Özellikler](#-özellikler) • [🛠️ Kurulum](#️-kurulum) • [📁 Proje Yapısı](#-proje-yapısı) • [🤖 AI Koç](#-ai-koç) • [🔥 Gamification](#-gamification)
+FitSync; antrenmanlarını planlamana, ilerlemeni takip etmene ve hedeflerini oyunlaştırmayla sürdürmene yardımcı olan mobil öncelikli bir fitness uygulamasıdır. Arayüz Türkçe ve İngilizce kullanılabilir.
 
-</div>
+> English: FitSync is a mobile-first fitness app for workout tracking, progress, and motivation.
 
----
+## Neler sunuyor?
 
-## 📱 Nedir?
+- Antrenman şablonları, set/tekrar/ağırlık kaydı ve dinlenme zamanlayıcısı
+- Kişisel rekorlar, kilo takibi, haftalık özet ve ilerleme grafikleri
+- XP, seviyeler, rozetler, seriler ve haftalık meydan okumalar
+- Antrenman paylaşımları, topluluk akışı ve etkileşimler
+- Gemini destekli AI koç ve farklı koç kişilikleri
 
-FitSync, **mobil öncelikli** tasarımıyla geliştirilmiş premium bir fitness web uygulamasıdır. Antrenman takibi, gamification sistemi, sosyal paylaşım, AI destekli fitness koçu ve çok daha fazlasını tek çatı altında sunar.
+Uygulama kaynakları [`FitSync-Framework-main/`](FitSync-Framework-main/) klasöründedir. Topluluk akışındaki bazı içerikler demo amaçlı simüle edilir.
 
----
+## Hızlı başlangıç
 
-## 🚀 Özellikler
+### Windows (PowerShell)
 
-### 💪 Antrenman Yönetimi
-- **Hazır Şablonlar** — Push, Pull, Legs, Full Body, Üst/Alt Vücut şablonları
-- **Özel Şablonlar** — Kendi antrenmanını şablon olarak kaydet
-- **Anlık Süre Takibi** — Antrenman başlayınca timer hemen çalışır
-- **Egzersiz Kaldırma** — Yanlış eklenen egzersizi çöp kutusuyla sil
-- **Set & KG Takibi** — Her egzersiz için set, tekrar ve ağırlık kaydı
-- **Kişisel Rekor (PR)** — Yeni PR'da confetti animasyonu
-
-### ⏱️ Dinlenme Zamanlayıcısı
-- 60 / 90 / 120 / 180 saniye seçenekleri
-- Tercih kalıcı olarak saklanır
-- Set tamamlanınca otomatik başlar
-
-### 🤖 AI Koç
-- **3 Farklı Kişilik:**
-  - 🎖️ **Komutan** — Askeri disiplin, sert motivasyon
-  - 🤙 **Kanka** — Samimi, eğlenceli, günlük dil
-  - 🏋️ **Profesyonel PT** — Bilimsel, detaylı açıklamalar
-- **Hızlı Sorular** — Tek tıkla hazır sorular (form, beslenme, toparlanma...)
-- **Kalıcı Geçmiş** — Sohbet localStorage'da saklanır
-- **Antrenman Bağlamı** — AI son 3 antrenmanını biliyor
-- **Gemini API** — Flask proxy üzerinden güvenli erişim
-
-### 📊 Dashboard
-- **Aktif Antrenman Banner** — Devam eden antrenman varsa yeşil pulse banner
-- **Haftalık Hedef** — 7 günlük antrenman takip halkası
-- **Challenge İlerleme** — Haftalık meydan okuma gerçek zamanlı progress bar
-- **Haftalık Özet Kartı** — Geçen haftanın istatistikleri
-- **Sosyal Feed** — Simüle edilmiş topluluk paylaşımları
-
-### ⚖️ Vücut Ağırlığı Takibi
-- Profil sayfasında kilo giriş modalı
-- SVG tabanlı çizgi grafik (son 30 gün)
-- Değişim göstergesi (↑ artış / ↓ azalış)
-
-### 🔥 Gamification
-| Özellik | Detay |
-|---------|-------|
-| XP Sistemi | Her set +5 XP, antrenman bitişi +50-150 XP |
-| Seviye | Her seviye artan XP eşiği |
-| Streak | Günlük antrenman serisi, multiplier (x1.25 → x2.0) |
-| Rozetler | Otomatik kazanılan başarı rozetleri |
-| Lig Sistemi | Bronze → Silver → Gold → Diamond |
-| Meydan Okumalar | Haftalık XP ödüllü görevler |
-
-### 📸 GymReal
-- Kameradan spor salonu check-in fotoğrafı
-- Haftalık on-time GymReal sayacı
-
-### 🌍 Dil Desteği
-- 🇹🇷 Türkçe
-- 🇬🇧 İngilizce
-- Onboarding'de dil seçimi, uygulama içinde anlık değiştirme
-
----
-
-## 🛠️ Kurulum
-
-### Gereksinimler
-- Python 3.8+
-- Gemini API anahtarı
-
-### 1. Projeyi İndir
-```bash
-git clone https://github.com/bergeda2106-ops/FitSync-Framework.git
-cd FitSync-Framework
+```powershell
+cd FitSync-Framework-main
+py -m venv .venv
+.\.venv\Scripts\Activate.ps1
+python -m pip install -r requirements.txt
+npm ci
+copy .env.example .env
 ```
 
-### 2. Python Bağımlılıklarını Yükle
-```bash
-pip install -r requirements.txt
+`.env` dosyasına Gemini API anahtarını ekle:
+
+```env
+GEMINI_API_KEY=anahtarini_buraya_yaz
 ```
 
-### 3. Gemini API Anahtarını Ayarla
-`server.py` dosyasında `GEMINI_API_KEY` değişkenini kendi anahtarınla güncelle:
-```python
-GEMINI_API_KEY = "your-api-key-here"
-```
+İki ayrı terminalde, ikisinde de `FitSync-Framework-main` klasöründeyken başlat:
 
-### 4. Flask Proxy Sunucusunu Başlat
-```bash
+```powershell
 python server.py
 ```
-> Sunucu `http://localhost:5000` üzerinde çalışır.
 
-### 5. Uygulamayı Aç
+```powershell
+npm run dev -- --host localhost --port 8080
+```
+
+Ardından <http://localhost:8080> adresini aç. AI koç için Flask sunucusu ve Gemini anahtarı gerekir; temel uygulama akışları AI olmadan da kullanılabilir.
+
+## Geliştirme kontrolleri
+
 ```bash
-python -m http.server 8080 --directory .
-```
-Tarayıcıda `http://localhost:8080` adresini aç.
-
-> **Not:** AI Koç özelliği için Flask sunucusu (`server.py`) çalışıyor olmalı.
-
----
-
-## 📁 Proje Yapısı
-
-```
-FitSync-Framework/
-├── index.html              # Ana HTML giriş noktası
-├── style.css               # Tüm stiller (CSS Variables, Glassmorphism)
-├── server.py               # Flask proxy (Gemini API güvenliği)
-├── requirements.txt        # Python bağımlılıkları
-│
-└── src/
-    ├── app.js              # Ana uygulama, routing
-    ├── store.js            # State yönetimi (localStorage + Firebase)
-    ├── router.js           # Hash tabanlı router
-    │
-    ├── api/
-    │   └── ai.js           # Gemini API çağrısı + kişilik sistemi
-    │
-    ├── components/
-    │   ├── navbar.js       # Alt navigasyon
-    │   ├── modal.js        # Genel modal bileşeni
-    │   ├── toast.js        # Bildirim toastları
-    │   └── confetti.js     # PR kutlama animasyonu
-    │
-    ├── data/
-    │   ├── exercises.js    # Egzersiz veritabanı (kategorili)
-    │   └── badges.js       # Rozet tanımları
-    │
-    ├── i18n/
-    │   ├── index.js        # Dil yönetimi
-    │   ├── tr.js           # Türkçe çeviriler
-    │   └── en.js           # İngilizce çeviriler
-    │
-    ├── pages/
-    │   ├── dashboard.js    # Ana sayfa
-    │   ├── workout.js      # Antrenman sayfası
-    │   ├── aicoach.js      # AI Koç sayfası
-    │   ├── profile.js      # Profil & kilo takibi
-    │   ├── gymreal.js      # GymReal check-in
-    │   └── gym.js          # Spor salonu hub
-    │
-    └── utils/
-        ├── xp.js           # XP & seviye hesaplama, streak multiplier
-        └── gamification.js # Rozet kontrolü, lig sistemi, challenge
+npm run lint
+npm run typecheck
+npm test -- --runInBand
+npm run build
+python -m pytest -q
 ```
 
----
+## Render'da yayınlama
 
-## 🔧 Teknoloji Yığını
+Depoda Render Blueprint dosyası (`render.yaml`) bulunur. Render Dashboard'da **New > Blueprint** ile depoyu bağla. İlk kurulumda şu ortam değişkenlerini gir:
 
-| Katman | Teknoloji |
-|--------|-----------|
-| Frontend | Vanilla JavaScript (ES6 Modules) |
-| Stil | CSS3 (Variables, Glassmorphism, Animations) |
-| Yazı Tipi | Inter (Google Fonts) |
-| Backend | Python Flask (proxy) |
-| Veritabanı | Firebase Firestore |
-| State | localStorage + Firebase sync |
-| AI | Google Gemini 1.5 Flash |
-| Deploy | Static (herhangi bir HTTP sunucu) |
+- `GEMINI_API_KEY`: Google AI Studio'dan alınan Gemini anahtarı.
+- `FITSYNC_PRODUCTION_ORIGIN`: yayınlanan frontend'in tam adresi (ör. `https://fitsync-web.onrender.com`).
+- `VITE_API_BASE_URL`: API servisinin tam adresi (ör. `https://fitsync-api.onrender.com`).
 
----
+Render servis URL'leri örneklerden farklıysa gerçek URL'leri kullan. Frontend adresi değişirse API servisindeki `FITSYNC_PRODUCTION_ORIGIN` değerini; API adresi değişirse frontend servisindeki `VITE_API_BASE_URL` değerini Dashboard'dan güncelle ve frontend'i yeniden yayınla. API anahtarını depoya veya `render.yaml` dosyasına ekleme.
 
-## 🤖 AI Koç
+## Teknoloji
 
-Gemini API anahtarı güvenlik amacıyla doğrudan frontend'de kullanılmaz. Tüm istekler Flask proxy üzerinden geçer:
+Vanilla JavaScript (ES modules), Vite, Flask ve Firebase Firestore.
 
-```
-Kullanıcı → aicoach.js → localhost:5000/api/ai → Gemini API
-```
+## Lisans
 
-**Kişilik Sistemi:**
-```javascript
-// Komutan: Askeri üslup
-// Kanka: Samimi/komik
-// Profesyonel PT: Bilimsel/detaylı
-```
+FitSync, [PolyForm Noncommercial License 1.0.0](LICENSE) ile lisanslanır. Ticari olmayan kişisel, araştırma ve eğitim kullanımına izin verilir; ticari kullanım için ayrıca hak sahibinden izin alınmalıdır. Bu lisans OSI onaylı bir açık kaynak lisansı değildir. Bu açıklama hukuki danışmanlık yerine geçmez.
 
----
+## Katkıda bulunma
 
-## 🔥 Gamification Detayları
+Hata bildirimleri ve iyileştirme önerileri için [Issues](https://github.com/bergeda2106-ops/FitSync-Framework/issues) açabilirsin. Değişiklik göndermeden önce ilgili testleri çalıştır.
 
-### Streak Multiplier
-| Seri | Çarpan |
-|------|--------|
-| 1-6 gün | x1.0 |
-| 7-13 gün | x1.25 |
-| 14-29 gün | x1.5 |
-| 30+ gün | x2.0 |
-
-### Lig Sistemi
-| Lig | Minimum XP |
-|-----|-----------|
-| 🥉 Bronze | 0 XP |
-| 🥈 Silver | 2,000 XP |
-| 🥇 Gold | 5,000 XP |
-| 💎 Diamond | 10,000 XP |
-
----
-
-## 📝 Geliştirme Notları
-
-- Uygulama tamamen **offline çalışır** (AI hariç)
-- Firebase senkronizasyonu cihazlar arası veri aktarımı sağlar
-- Tüm veriler `fitsync_data` localStorage anahtarında tutulur
-- `serve_nocache.py` ile geliştirme sırasında önbellek sorunları önlenebilir
-
----
-
-## 📄 Lisans
-
-MIT License — Özgürce kullanabilir, düzenleyebilir ve dağıtabilirsiniz.
-
----
-
-<div align="center">
-Made with ❤️ for the fitness community
-</div>
+Lütfen Gemini API anahtarını veya başka gizli bilgileri kaynak koda ekleme; yerel `.env` dosyasını paylaşma.
