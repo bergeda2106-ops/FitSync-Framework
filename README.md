@@ -1,4 +1,72 @@
 # FitSync
 
-The maintained application lives in [`FitSync-Framework-main`](FitSync-Framework-main/).
-See its [README](FitSync-Framework-main/README.md) for setup and development instructions.
+<p align="center">
+  <img src="FitSync-Framework-main/public/icons/icon.svg" alt="FitSync icon" width="96">
+</p>
+
+**Sadece spor değil, bir topluluk.**
+
+FitSync; antrenmanlarını planlamana, ilerlemeni takip etmene ve hedeflerini oyunlaştırmayla sürdürmene yardımcı olan mobil öncelikli bir fitness uygulamasıdır. Arayüz Türkçe ve İngilizce kullanılabilir.
+
+> English: FitSync is a mobile-first fitness app for workout tracking, progress, and motivation.
+
+## Neler sunuyor?
+
+- Antrenman şablonları, set/tekrar/ağırlık kaydı ve dinlenme zamanlayıcısı
+- Kişisel rekorlar, kilo takibi, haftalık özet ve ilerleme grafikleri
+- XP, seviyeler, rozetler, seriler ve haftalık meydan okumalar
+- GymReal check-in ve topluluk akışı
+- Gemini destekli AI koç ve farklı koç kişilikleri
+
+Uygulama kaynakları [`FitSync-Framework-main/`](FitSync-Framework-main/) klasöründedir. Topluluk akışındaki bazı içerikler demo amaçlı simüle edilir.
+
+## Hızlı başlangıç
+
+### Windows (PowerShell)
+
+```powershell
+cd FitSync-Framework-main
+py -m venv .venv
+.\.venv\Scripts\Activate.ps1
+python -m pip install -r requirements.txt
+npm ci
+copy .env.example .env
+```
+
+`.env` dosyasına Gemini API anahtarını ekle:
+
+```env
+GEMINI_API_KEY=anahtarini_buraya_yaz
+```
+
+İki ayrı terminalde, ikisinde de `FitSync-Framework-main` klasöründeyken başlat:
+
+```powershell
+python server.py
+```
+
+```powershell
+npm run dev -- --host localhost --port 8080
+```
+
+Ardından <http://localhost:8080> adresini aç. AI koç için Flask sunucusu ve Gemini anahtarı gerekir; temel uygulama akışları AI olmadan da kullanılabilir.
+
+## Geliştirme kontrolleri
+
+```bash
+npm run lint
+npm run typecheck
+npm test -- --runInBand
+npm run build
+python -m pytest -q
+```
+
+## Teknoloji
+
+Vanilla JavaScript (ES modules), Vite, Flask ve Firebase Firestore.
+
+## Katkıda bulunma
+
+Hata bildirimleri ve iyileştirme önerileri için [Issues](https://github.com/bergeda2106-ops/FitSync-Framework/issues) açabilirsin. Değişiklik göndermeden önce ilgili testleri çalıştır.
+
+Lütfen Gemini API anahtarını veya başka gizli bilgileri kaynak koda ekleme; yerel `.env` dosyasını paylaşma.
