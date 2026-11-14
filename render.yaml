@@ -1,0 +1,31 @@
+services:
+  - type: web
+    name: fitsync-api
+    runtime: python
+    rootDir: FitSync-Framework-main
+    region: frankfurt
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn --config deploy/gunicorn.conf.py --bind 0.0.0.0:$PORT server:app
+    healthCheckPath: /api/health
+    envVars:
+      - key: WEB_CONCURRENCY
+        value: "1"
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: FITSYNC_PRODUCTION_ORIGIN
+        sync: false
+
+  - type: web
+    name: fitsync-web
+    runtime: static
+    rootDir: FitSync-Framework-main
+    buildCommand: npm ci && npm run build
+    staticPublishPath: dist
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    envVars:
+      - key: VITE_API_BASE_URL
+        sync: false

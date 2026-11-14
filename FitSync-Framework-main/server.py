@@ -36,6 +36,12 @@ limiter = Limiter(
 
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
 
+
+@app.route('/api/health', methods=['GET'])
+def health_check():
+    return jsonify({"status": "ok"})
+
+
 @app.route('/api/ai', methods=['POST'])
 @limiter.limit("30 per minute")
 def proxy_gemini():

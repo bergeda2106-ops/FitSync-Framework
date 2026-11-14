@@ -61,6 +61,16 @@ npm run build
 python -m pytest -q
 ```
 
+## Render'da yayınlama
+
+Depoda Render Blueprint dosyası (`render.yaml`) bulunur. Render Dashboard'da **New > Blueprint** ile depoyu bağla. İlk kurulumda şu ortam değişkenlerini gir:
+
+- `GEMINI_API_KEY`: Google AI Studio'dan alınan Gemini anahtarı.
+- `FITSYNC_PRODUCTION_ORIGIN`: yayınlanan frontend'in tam adresi (ör. `https://fitsync-web.onrender.com`).
+- `VITE_API_BASE_URL`: API servisinin tam adresi (ör. `https://fitsync-api.onrender.com`).
+
+Render servis URL'leri örneklerden farklıysa gerçek URL'leri kullan. Frontend adresi değişirse API servisindeki `FITSYNC_PRODUCTION_ORIGIN` değerini; API adresi değişirse frontend servisindeki `VITE_API_BASE_URL` değerini Dashboard'dan güncelle ve frontend'i yeniden yayınla. API anahtarını depoya veya `render.yaml` dosyasına ekleme.
+
 ## Teknoloji
 
 Vanilla JavaScript (ES modules), Vite, Flask ve Firebase Firestore.
