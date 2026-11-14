@@ -194,7 +194,6 @@ function renderPostCard(post, lang) {
           ${post.exercise ? `<span class="post-tag">${post.exercise}</span>` : ''}
           ${post.weight   ? `<span class="post-tag">${post.weight}kg</span>` : ''}
           ${post.set      ? `<span class="post-tag">Set ${post.set}</span>` : ''}
-          ${post.gym      ? `<span class="post-tag">📍 ${post.gym}</span>` : ''}
         </div>
       </div>
 
